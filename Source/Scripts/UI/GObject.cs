@@ -173,6 +173,11 @@ namespace FairyGUI
 		/// </summary>
 		public static GObject draggingObject { get; private set; }
 
+		/// <summary>
+		/// 当前是否释放
+		/// </summary>
+		public static bool isDisposed = false;
+
 		float _x;
 		float _y;
 		float _z;
@@ -1451,6 +1456,7 @@ namespace FairyGUI
 				displayObject.gOwner = null;
 				displayObject.Dispose();
 			}
+			isDisposed = true
 		}
 
 		public GImage asImage

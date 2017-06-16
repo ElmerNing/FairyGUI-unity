@@ -45,15 +45,37 @@ namespace FairyGUI
 		/// <seealso cref="ListSelectionMode"/>
 		public ListSelectionMode selectionMode;
 
-		/// <summary>
-		/// Callback function when an item is needed to update its look.
-		/// </summary>
-		public ListItemRenderer itemRenderer;
+        /// <summary>
+        /// Callback function when an item is needed to update its look.
+        /// </summary>
+        ListItemRenderer ________itemRenderer;
+        public ListItemRenderer itemRenderer
+        {
+            get
+            {
+                return ________itemRenderer;
+            }
+            set
+            {
+                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(________itemRenderer);
+                ________itemRenderer = value;
+            }
+        }
 
-		/// <summary>
-		/// Callback funtion to return item resource url.
-		/// </summary>
-		public ListItemProvider itemProvider;
+        /// <summary>
+        /// Callback funtion to return item resource url.
+        /// </summary>
+        public ListItemProvider ______________itemProvider;
+        public ListItemProvider itemProvider
+        {
+            get {
+                return ______________itemProvider;
+            }
+            set {
+                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(______________itemProvider);
+                ______________itemProvider = value;
+            }
+        }
 
 		/// <summary>
 		/// Dispatched when a list item being clicked.
@@ -127,6 +149,10 @@ namespace FairyGUI
 
 		public override void Dispose()
 		{
+
+			itemRenderer = null;
+			itemProvider = null;
+
 			_pool.Clear();
 			if (_virtualListChanged != 0)
 				Timers.inst.Remove(this.RefreshVirtualList);

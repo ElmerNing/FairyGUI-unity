@@ -48,7 +48,22 @@ namespace FairyGUI
 		bool _playing;
 		float _ownerBaseX;
 		float _ownerBaseY;
-		PlayCompleteCallback _onComplete;
+		
+		PlayCompleteCallback _______onComplete;
+        PlayCompleteCallback _onComplete
+        {
+            get
+            {
+                return _______onComplete;
+            }
+            set
+            {
+                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(_______onComplete);
+                
+                _______onComplete = value;
+            }
+        }
+
 		int _options;
 		bool _reversed;
 		float _maxTime;
@@ -288,6 +303,9 @@ namespace FairyGUI
 
 		public void Dispose()
 		{
+
+			_onComplete = null;
+
 			if (!_playing)
 				return;
 

@@ -41,6 +41,9 @@ namespace FairyGUI
 		public void Remove(EventCallback1 callback)
 		{
 			_callback1 -= callback;
+
+			LuaFramework.LuaDelegateManager ld = AppFacade.Instance.GetManager<LuaFramework.LuaDelegateManager>(LuaFramework.ManagerName.LuaDelegateManager);
+			ld.ClearDelegate(callback);
 		}
 
 		public void Add(EventCallback0 callback)
@@ -52,6 +55,9 @@ namespace FairyGUI
 		public void Remove(EventCallback0 callback)
 		{
 			_callback0 -= callback;
+
+			LuaFramework.LuaDelegateManager ld = AppFacade.Instance.GetManager<LuaFramework.LuaDelegateManager>(LuaFramework.ManagerName.LuaDelegateManager);
+			ld.ClearDelegate(callback);
 		}
 
 		public bool isEmpty
@@ -59,8 +65,16 @@ namespace FairyGUI
 			get { return _callback1 == null && _callback0 == null && _captureCallback == null; }
 		}
 
+
 		public void Clear()
 		{
+
+			//只清理 注册的lua代理    
+			LuaFramework.LuaDelegateManager ld = AppFacade.Instance.GetManager<LuaFramework.LuaDelegateManager>(LuaFramework.ManagerName.LuaDelegateManager);
+			ld.ClearDelegate(_callback1);
+			ld.ClearDelegate(_callback0);
+			ld.ClearDelegate(_captureCallback);
+
 			_callback1 = null;
 			_callback0 = null;
 			_captureCallback = null;
