@@ -99,6 +99,7 @@ namespace FairyGUI
 		int _columnGap;
 		AlignType _align;
 		VertAlignType _verticalAlign;
+		Controller _selectionController;
 
 		GObjectPool _pool;
 		bool _selectionHandled;
@@ -156,6 +157,8 @@ namespace FairyGUI
 			_pool.Clear();
 			if (_virtualListChanged != 0)
 				Timers.inst.Remove(this.RefreshVirtualList);
+
+			_selectionController = null;
 
 			base.Dispose();
 		}
@@ -487,6 +490,15 @@ namespace FairyGUI
 		/// <summary>
 		/// 
 		/// </summary>
+		public Controller selectionController
+		{
+			get { return _selectionController; }
+			set { _selectionController = value; }
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
 		/// <returns></returns>
 		public List<int> GetSelection()
 		{
@@ -525,7 +537,10 @@ namespace FairyGUI
 
 			GButton obj = GetChildAt(index).asButton;
 			if (obj != null && !obj.selected)
+			{
 				obj.selected = true;
+				UpdateSelectionController(index);
+			}
 		}
 
 		/// <summary>
@@ -568,12 +583,19 @@ namespace FairyGUI
 			CheckVirtualList();
 
 			int cnt = _children.Count;
+			int last = -1;
 			for (int i = 0; i < cnt; i++)
 			{
 				GButton obj = _children[i].asButton;
 				if (obj != null)
+				{
 					obj.selected = true;
+					last = i;
+				}
 			}
+
+			if (last != -1)
+				UpdateSelectionController(last);
 		}
 
 		/// <summary>
@@ -598,12 +620,20 @@ namespace FairyGUI
 			CheckVirtualList();
 
 			int cnt = _children.Count;
+			int last = -1;
 			for (int i = 0; i < cnt; i++)
 			{
 				GButton obj = _children[i].asButton;
 				if (obj != null)
+				{
 					obj.selected = !obj.selected;
+					if (obj.selected)
+						last = i;
+				}
 			}
+
+			if (last != -1)
+				UpdateSelectionController(last);
 		}
 
 		/// <summary>
@@ -876,6 +906,9 @@ namespace FairyGUI
 
 			if (!dontChangeLastIndex)
 				_lastSelectedIndex = index;
+
+			if (button.selected)
+				UpdateSelectionController(index);
 		}
 
 		void ClearSelectionExcept(GObject obj)
@@ -982,6 +1015,26 @@ namespace FairyGUI
 			SetBoundsChangedFlag();
 			if (_virtual)
 				SetVirtualListChangedFlag(true);
+		}
+
+		override public void HandleControllerChanged(Controller c)
+		{
+			base.HandleControllerChanged(c);
+
+			if (_selectionController == c)
+				this.selectedIndex = c.selectedIndex;
+		}
+
+		void UpdateSelectionController(int index)
+		{
+			if (_selectionController != null && !_selectionController.changing
+				&& index < _selectionController.pageCount)
+			{
+				Controller c = _selectionController;
+				_selectionController = null;
+				c.selectedIndex = index;
+				_selectionController = c;
+			}
 		}
 
 		/// <summary>
@@ -2528,6 +2581,14 @@ namespace FairyGUI
 			defaultItem = xml.GetAttribute("defaultItem");
 			autoResizeItem = xml.GetAttributeBool("autoItemSize", true);
 
+			str = xml.GetAttribute("renderOrder");
+			if (str != null)
+			{
+				_childrenRenderOrder = FieldTypes.ParseChildrenRenderOrder(str);
+				if (_childrenRenderOrder == ChildrenRenderOrder.Arch)
+					_apexIndex = xml.GetAttributeInt("apex", 0);
+			}
+
 			XMLList.Enumerator et = xml.GetEnumerator("item");
 			while (et.MoveNext())
 			{
@@ -2555,6 +2616,17 @@ namespace FairyGUI
 						obj.name = str;
 				}
 			}
+		}
+
+		override public void Setup_AfterAdd(XML xml)
+		{
+			base.Setup_AfterAdd(xml);
+
+			string str;
+
+			str = xml.GetAttribute("selectionController");
+			if (str != null)
+				_selectionController = parent.GetController(str);
 		}
 	}
 }
