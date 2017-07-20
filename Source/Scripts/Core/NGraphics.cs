@@ -156,7 +156,7 @@ namespace FairyGUI
 			_shader = ShaderConfig.imageShader;
 			meshFilter = gameObject.AddComponent<MeshFilter>();
 			meshRenderer = gameObject.AddComponent<MeshRenderer>();
-#if UNITY_5
+#if (UNITY_5 || UNITY_5_3_OR_NEWER)
 			meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 			meshRenderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
 #else
@@ -226,14 +226,6 @@ namespace FairyGUI
 			get { return _material; }
 			set
 			{
-				if (_customMatarial && _material != null)
-				{
-					if (Application.isPlaying)
-						Material.Destroy(_material);
-					else
-						Material.DestroyImmediate(_material);
-				}
-
 				_material = value;
 				if (_material != null)
 				{
@@ -1069,7 +1061,7 @@ namespace FairyGUI
 			ToolSet.SetParent(gameObject.transform, parent);
 			meshFilter = gameObject.AddComponent<MeshFilter>();
 			meshRenderer = gameObject.AddComponent<MeshRenderer>();
-#if UNITY_5
+#if (UNITY_5 || UNITY_5_3_OR_NEWER)
 			meshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 #else
 			meshRenderer.castShadows = false;

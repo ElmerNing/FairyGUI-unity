@@ -836,6 +836,9 @@ namespace FairyGUI
 
 			if (_overlapSize.y > 0)
 			{
+				if (_loop != 0 && _yPos == 0)
+					ani = false;
+
 				float bottom = _yPos + _viewSize.y;
 				if (setFirst || rect.y <= _yPos || rect.height >= _viewSize.y)
 				{
@@ -856,6 +859,9 @@ namespace FairyGUI
 			}
 			if (_overlapSize.x > 0)
 			{
+				if (_loop != 0 && _xPos == 0)
+					ani = false;
+
 				float right = _xPos + _viewSize.x;
 				if (setFirst || rect.x <= _xPos || rect.width >= _viewSize.x)
 				{
@@ -1758,7 +1764,9 @@ namespace FairyGUI
 
 		private void ShowScrollBar(bool val)
 		{
-			if (val)
+			if(!Application.isPlaying)
+				__showScrollBar(val);
+			else if (val)
 			{
 				__showScrollBar(true);
 				Timers.inst.Remove(_showScrollBarDelegate);

@@ -14,7 +14,7 @@ namespace FairyGUIEditor
 
 		static bool _loaded;
 
-#if UNITY_5
+#if (UNITY_5 || UNITY_5_3_OR_NEWER)
 		[InitializeOnLoadMethod]
 		static void Startup()
 		{
@@ -25,7 +25,7 @@ namespace FairyGUIEditor
 		[MenuItem("GameObject/FairyGUI/UI Panel", false, 0)]
 		static void CreatePanel()
 		{
-#if !UNITY_5
+#if !(UNITY_5 || UNITY_5_3_OR_NEWER)
 			EditorApplication.update -= EditorApplication_Update;
 			EditorApplication.update += EditorApplication_Update;
 #endif
@@ -56,14 +56,7 @@ namespace FairyGUIEditor
 		[MenuItem("Window/FairyGUI - Refresh Packages And Panels")]
 		static void RefreshPanels()
 		{
-			if (!Application.isPlaying)
-			{
-				_loaded = false;
-				LoadPackages();
-				Debug.Log("FairyGUI - Refresh Packages And Panels complete.");
-			}
-			else
-				EditorUtility.DisplayDialog("FairyGUI", "Cannot run in play mode.", "OK");
+			ReloadPackages();
 		}
 
 		static void EditorApplication_Update()
@@ -77,12 +70,24 @@ namespace FairyGUIEditor
 			LoadPackages();
 		}
 
+		public static void ReloadPackages()
+		{
+			if (!Application.isPlaying)
+			{
+				_loaded = false;
+				LoadPackages();
+				Debug.Log("FairyGUI - Refresh Packages And Panels complete.");
+			}
+			else
+				EditorUtility.DisplayDialog("FairyGUI", "Cannot run in play mode.", "OK");
+		}
+
 		public static void LoadPackages()
 		{
 			if (Application.isPlaying || _loaded)
 				return;
 
-#if !UNITY_5
+#if !(UNITY_5 || UNITY_5_3_OR_NEWER)
 			EditorApplication.update -= EditorApplication_Update;
 			EditorApplication.update += EditorApplication_Update;
 #endif
