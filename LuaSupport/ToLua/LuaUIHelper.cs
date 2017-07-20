@@ -24,6 +24,48 @@ namespace FairyGUI
 			});
 		}
 
+        private static GComponent CreateGComponent(string extention)
+        {
+            if (extention != null)
+            {
+                switch (extention)
+                {
+                    case "Button":
+                        return new GLuaButton();
+
+                    case "Label":
+                        return new GLuaLabel();
+
+                    case "ProgressBar":
+                        return new GLuaProgressBar();
+
+                    case "Slider":
+                        return new GLuaSlider();
+
+                    case "ScrollBar":
+                        return new GLuaScrollBar();
+
+                    case "ComboBox":
+                        return new GLuaComboBox();
+
+                    default:
+                        return new GLuaComponent();
+                }
+            }
+            else
+                return new GLuaComponent();
+        }
+        
+        public static void SetDefaultExtension(LuaFunction extendFunction)
+        {
+            UIObjectFactory.SetComponentExtension((extention) =>
+            {
+                GComponent gcom = CreateGComponent(extention);
+                gcom.data = extendFunction;
+                return gcom;
+            });
+        }
+
 		[NoToLuaAttribute]
 		public static LuaTable ConnectLua(GComponent gcom)
 		{
@@ -32,10 +74,13 @@ namespace FairyGUI
 			if (extendFunction!=null)
 			{
 				gcom.data = null;
-
 				extendFunction.BeginPCall();
 				extendFunction.Push(gcom);
-				extendFunction.PCall();
+                if (gcom.packageItem != null)
+                {
+                    extendFunction.Push(gcom.packageItem.name);
+                }
+                extendFunction.PCall();
 				_peerTable = extendFunction.CheckLuaTable();
 				extendFunction.EndPCall();
 			}
@@ -169,6 +214,27 @@ namespace FairyGUI
 				_peerTable.Dispose();
 		}
 	}
+
+    public class GLuaScrollBar : GScrollBar
+    {
+        LuaTable _peerTable;
+
+        [NoToLuaAttribute]
+        public override void ConstructFromXML(XML xml)
+        {
+            base.ConstructFromXML(xml);
+
+            _peerTable = LuaUIHelper.ConnectLua(this);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (_peerTable != null)
+                _peerTable.Dispose();
+        }
+    }
 
 	public class LuaWindow : Window
 	{

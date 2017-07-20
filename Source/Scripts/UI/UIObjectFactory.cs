@@ -14,6 +14,7 @@ namespace FairyGUI
 
 		static Dictionary<string, GComponentCreator> packageItemExtensions = new Dictionary<string, GComponentCreator>();
 		static GLoaderCreator loaderCreator;
+        static Func<string, GComponent> gcomponentCreator;
 
 		/// <summary>
 		/// 
@@ -60,6 +61,14 @@ namespace FairyGUI
 			loaderCreator = creator;
 		}
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public static void SetComponentExtension(Func<string, GComponent> creator)
+        {
+            gcomponentCreator = creator;
+        }
+
 		internal static void ResolvePackageItemExtension(PackageItem pi)
 		{
 			if (!packageItemExtensions.TryGetValue(UIPackage.URL_PREFIX + pi.owner.id + pi.id, out pi.extensionCreator)
@@ -97,7 +106,13 @@ namespace FairyGUI
 
 						XML xml = pi.componentData;
 						string extention = xml.GetAttribute("extention");
-						if (extention != null)
+
+                        if (gcomponentCreator != null)
+                        {
+                            return gcomponentCreator(extention);
+                        }
+
+                        if (extention != null)
 						{
 							switch (extention)
 							{
