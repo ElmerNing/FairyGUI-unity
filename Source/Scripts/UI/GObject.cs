@@ -171,7 +171,7 @@ namespace FairyGUI
 		/// <summary>
 		/// 当前是否释放
 		/// </summary>
-		public static bool isDisposed = false;
+		public bool isDisposed = false;
 
 		float _x;
 		float _y;
