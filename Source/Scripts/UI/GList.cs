@@ -52,8 +52,11 @@ namespace FairyGUI
             }
             set
             {
-                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(________itemRenderer);
-                ________itemRenderer = value;
+                if (________itemRenderer != value)
+                {
+                    LuaFramework.LuaDelegateManager.isntance.ClearDelegate(________itemRenderer);
+                    ________itemRenderer = value;
+                }
             }
         }
 
@@ -67,8 +70,12 @@ namespace FairyGUI
                 return ______________itemProvider;
             }
             set {
-                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(______________itemProvider);
-                ______________itemProvider = value;
+                if (______________itemProvider != value)
+                {
+                    LuaFramework.LuaDelegateManager.isntance.ClearDelegate(______________itemProvider);
+                    ______________itemProvider = value;
+                }
+                
             }
         }
 

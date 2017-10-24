@@ -109,7 +109,12 @@ namespace FairyGUI
 			if (_bridge == null)
 				_bridge = this.owner.GetEventBridge(_type);
 
-			_bridge.Clear();
+            if (callback == _bridge._callback0)
+            {
+                return;
+            }
+
+            _bridge.Clear();
 			if (callback != null)
 				_bridge.Add(callback);
 		}
@@ -120,10 +125,14 @@ namespace FairyGUI
 		/// <param name="callback"></param>
 		public void Set(EventCallback1 callback)
 		{
+            
 			if (_bridge == null)
 				_bridge = this.owner.GetEventBridge(_type);
-
-			_bridge.Clear();
+            if (callback == _bridge._callback1)
+            {
+                return;
+            }
+            _bridge.Clear();
 			if (callback != null)
 				_bridge.Add(callback);
 		}

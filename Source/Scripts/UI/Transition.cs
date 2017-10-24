@@ -58,9 +58,12 @@ namespace FairyGUI
             }
             set
             {
-                LuaFramework.LuaDelegateManager.isntance.ClearDelegate(_______onComplete);
+                if (_______onComplete != value)
+                {
+                    LuaFramework.LuaDelegateManager.isntance.ClearDelegate(_______onComplete);
+                    _______onComplete = value;
+                }
                 
-                _______onComplete = value;
             }
         }
 
