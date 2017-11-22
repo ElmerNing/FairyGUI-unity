@@ -264,14 +264,20 @@ namespace FairyGUI
 		{
 			if (_font != targetFont)
 				return;
+
+			if (mainTexture != null)
+				mainTexture.Dispose(false);
 			mainTexture = new NTexture(_font.material.mainTexture);
 
 			textRebuildFlag = true;
+
 			//Debug.Log("Font texture rebuild: " + name + "," + mainTexture.width + "," + mainTexture.height);
 		}
 #else
 		void textureRebuildCallback()
 		{
+            if (mainTexture != null)
+                mainTexture.Dispose(false);
 			mainTexture = new NTexture(_font.material.mainTexture);
 
 			textRebuildFlag = true;

@@ -75,7 +75,6 @@ namespace FairyGUI
 		bool _isHoldAreaDone;
 		int _aniFlag;
 		bool _scrollBarVisible;
-		int _touchId;
 		internal int _loop;
 		int _headerLockedSize;
 		int _footerLockedSize;
@@ -87,8 +86,6 @@ namespace FairyGUI
 		Vector2 _tweenDuration;
 
 		EventCallback0 _refreshDelegate;
-		EventCallback1 _touchEndDelegate;
-		EventCallback1 _touchMoveDelegate;
 		TimerCallback _tweenUpdateDelegate;
 		TimerCallback _showScrollBarDelegate;
 
@@ -124,8 +121,6 @@ namespace FairyGUI
 
 			_refreshDelegate = Refresh;
 			_tweenUpdateDelegate = TweenUpdate;
-			_touchEndDelegate = __touchEnd;
-			_touchMoveDelegate = __touchMove;
 			_showScrollBarDelegate = __showScrollBar;
 
 			_owner = owner;
@@ -254,6 +249,8 @@ namespace FairyGUI
 
 			_owner.rootContainer.onMouseWheel.Add(__mouseWheel);
 			_owner.rootContainer.onTouchBegin.Add(__touchBegin);
+			_owner.rootContainer.onTouchMove.Add(__touchMove);
+			_owner.rootContainer.onTouchEnd.Add(__touchEnd);
 		}
 
 		/// <summary>
@@ -878,13 +875,13 @@ namespace FairyGUI
 			if (_overlapSize.y > 0)
 			{
 				float dist = obj.y + _container.y;
-				if (dist < -obj.height - 20 || dist > _viewSize.y + 20)
+				if (dist <= -obj.height || dist >= _viewSize.y)
 					return false;
 			}
 			if (_overlapSize.x > 0)
 			{
 				float dist = obj.x + _container.x;
-				if (dist < -obj.width - 20 || dist > _viewSize.x + 20)
+				if (dist <= -obj.width || dist >= _viewSize.x)
 					return false;
 			}
 
@@ -896,8 +893,7 @@ namespace FairyGUI
 		/// </summary>
 		public void CancelDragging()
 		{
-			Stage.inst.onTouchMove.Remove(_touchMoveDelegate);
-			Stage.inst.onTouchEnd.Remove(_touchEndDelegate);
+			Stage.inst.RemoveTouchMonitor(_owner.rootContainer);
 
 			if (draggingPane == this)
 				draggingPane = null;
@@ -1218,7 +1214,7 @@ namespace FairyGUI
 			}
 
 			if (!_maskDisabled)
-				_maskContainer.clipRect = new Rect(-owner._alignOffset.x, -owner._alignOffset.y, _viewSize.x, _viewSize.y);
+				_maskContainer.clipRect = new Rect(-_owner._alignOffset.x, -_owner._alignOffset.y, _viewSize.x, _viewSize.y);
 
 			if (_scrollType == ScrollType.Horizontal || _scrollType == ScrollType.Both)
 				_overlapSize.x = Mathf.CeilToInt(Math.Max(0, _contentSize.x - _viewSize.x));
@@ -1321,7 +1317,7 @@ namespace FairyGUI
 				{
 					if (_container.x != 0)
 						_container.x = 0;
-					pos.x = _container.x;
+					pos.x = 0;
 				}
 				if (_overlapSize.y > 0)
 					pos.y = -(int)_yPos;
@@ -1329,7 +1325,7 @@ namespace FairyGUI
 				{
 					if (_container.y != 0)
 						_container.y = 0;
-					pos.y = _container.y;
+					pos.y = 0;
 				}
 
 				if (pos.x != _container.x || pos.y != _container.y)
@@ -1398,40 +1394,39 @@ namespace FairyGUI
 				return;
 
 			InputEvent evt = context.inputEvent;
+			if (evt.button != 0)
+				return;
+
+			context.CaptureTouch();
+
 			Vector2 pt = _owner.GlobalToLocal(evt.position);
-			_touchId = evt.touchId;
 
 			if (_tweening != 0)
 			{
 				KillTween();
-				Stage.inst.CancelClick(_touchId);
+				Stage.inst.CancelClick(evt.touchId);
+
+				//立刻停止惯性滚动，可能位置不对齐，设定这个标志，使touchEnd时归位
+				_isMouseMoved = true;
 			}
+			else
+				_isMouseMoved = false;
 
 			_containerPos = _container.xy;
 			_beginTouchPos = _lastTouchPos = pt;
 			_lastTouchGlobalPos = evt.position;
 			_isHoldAreaDone = false;
-			_isMouseMoved = false;
 			_velocity = Vector2.zero;
 			_velocityScale = 1;
 			_lastMoveTime = Time.unscaledTime;
-
-			Stage.inst.onTouchMove.Add(_touchMoveDelegate);
-			Stage.inst.onTouchEnd.Add(_touchEndDelegate);
 		}
 
 		private void __touchMove(EventContext context)
 		{
-			if (!_touchEffect || _owner.displayObject == null || _owner.displayObject.isDisposed)
-				return;
-
-			if (draggingPane != null && draggingPane != this || GObject.draggingObject != null) //已经有其他拖动
+			if (!_touchEffect || draggingPane != null && draggingPane != this || GObject.draggingObject != null) //已经有其他拖动
 				return;
 
 			InputEvent evt = context.inputEvent;
-			if (_touchId != evt.touchId)
-				return;
-
 			Vector2 pt = _owner.GlobalToLocal(evt.position);
 			if (float.IsNaN(pt.x))
 				return;
@@ -1512,7 +1507,7 @@ namespace FairyGUI
 			{
 				if (newPos.y > 0)
 				{
-					if (!_bouncebackEffect || _inertiaDisabled)
+					if (!_bouncebackEffect)
 						_container.y = 0;
 					else if (_header != null && _header.maxHeight != 0)
 						_container.y = (int)Mathf.Min(newPos.y * 0.5f, _header.maxHeight);
@@ -1521,7 +1516,7 @@ namespace FairyGUI
 				}
 				else if (newPos.y < -_overlapSize.y)
 				{
-					if (!_bouncebackEffect || _inertiaDisabled)
+					if (!_bouncebackEffect)
 						_container.y = -_overlapSize.y;
 					else if (_footer != null && _footer.maxHeight > 0)
 						_container.y = (int)Mathf.Max((newPos.y + _overlapSize.y) * 0.5f, -_footer.maxHeight) - _overlapSize.y;
@@ -1536,7 +1531,7 @@ namespace FairyGUI
 			{
 				if (newPos.x > 0)
 				{
-					if (!_bouncebackEffect || _inertiaDisabled)
+					if (!_bouncebackEffect)
 						_container.x = 0;
 					else if (_header != null && _header.maxWidth != 0)
 						_container.x = (int)Mathf.Min(newPos.x * 0.5f, _header.maxWidth);
@@ -1545,7 +1540,7 @@ namespace FairyGUI
 				}
 				else if (newPos.x < 0 - _overlapSize.x)
 				{
-					if (!_bouncebackEffect || _inertiaDisabled)
+					if (!_bouncebackEffect)
 						_container.x = -_overlapSize.x;
 					else if (_footer != null && _footer.maxWidth > 0)
 						_container.x = (int)Mathf.Max((newPos.x + _overlapSize.x) * 0.5f, -_footer.maxWidth) - _overlapSize.x;
@@ -1608,20 +1603,12 @@ namespace FairyGUI
 
 		private void __touchEnd(EventContext context)
 		{
-			InputEvent evt = context.inputEvent;
-			if (_touchId != evt.touchId)
-				return;
-
-			Stage.inst.onTouchMove.Remove(_touchMoveDelegate);
-			Stage.inst.onTouchEnd.Remove(_touchEndDelegate);
-
 			if (draggingPane == this)
 				draggingPane = null;
 
 			_gestureFlag = 0;
 
-			if (!_isMouseMoved || _owner.displayObject == null || _owner.displayObject.isDisposed
-				 || !_touchEffect || _inertiaDisabled)
+			if (!_isMouseMoved || !_touchEffect)
 			{
 				_isMouseMoved = false;
 				return;
@@ -1682,12 +1669,17 @@ namespace FairyGUI
 			else
 			{
 				//更新速度
-				float elapsed = (Time.unscaledTime - _lastMoveTime) * 60 - 1;
-				if (elapsed > 1)
-					_velocity = _velocity * Mathf.Pow(0.833f, elapsed);
+				if (!_inertiaDisabled)
+				{
+					float elapsed = (Time.unscaledTime - _lastMoveTime) * 60 - 1;
+					if (elapsed > 1)
+						_velocity = _velocity * Mathf.Pow(0.833f, elapsed);
 
-				//根据速度计算目标位置和需要时间
-				endPos = UpdateTargetAndDuration(_tweenStart);
+					//根据速度计算目标位置和需要时间
+					endPos = UpdateTargetAndDuration(_tweenStart);
+				}
+				else
+					_tweenDuration.Set(TWEEN_TIME_DEFAULT, TWEEN_TIME_DEFAULT);
 				Vector2 oldChange = endPos - _tweenStart;
 
 				//调整目标位置
@@ -1697,7 +1689,11 @@ namespace FairyGUI
 
 				_tweenChange = endPos - _tweenStart;
 				if (_tweenChange.x == 0 && _tweenChange.y == 0)
+				{
+					if (_scrollBarDisplayAuto)
+						ShowScrollBar(false);
 					return;
+				}
 
 				//如果目标位置已调整，随之调整需要时间
 				if (_pageMode || _snapToItem)
@@ -1845,7 +1841,7 @@ namespace FairyGUI
 			{
 				float halfSize = GetLoopPartSize(2, axis);
 				float tmp = _tweenStart[axis] + halfSize;
-				if (tmp <= 0 && tmp >= -_overlapSize.x)
+				if (tmp <= 0 && tmp >= -_overlapSize[axis])
 				{
 					endPos[axis] += halfSize;
 					_tweenStart[axis] = tmp;

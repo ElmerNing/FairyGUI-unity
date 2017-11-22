@@ -62,6 +62,7 @@ namespace FairyGUI
 		Vector2 _lastPoint;
 		float _time;
 		bool _started;
+		bool _began;
 
 		public static int ACTION_DISTANCE = 200;
 
@@ -87,12 +88,35 @@ namespace FairyGUI
 		public void Enable(bool value)
 		{
 			if (value)
-				host.onTouchBegin.Add(__touchBegin);
+			{
+				if (host == GRoot.inst)
+				{
+					Stage.inst.onTouchBegin.Add(__touchBegin);
+					Stage.inst.onTouchMove.Add(__touchMove);
+					Stage.inst.onTouchEnd.Add(__touchEnd);
+				}
+				else
+				{
+					host.onTouchBegin.Add(__touchBegin);
+					host.onTouchMove.Add(__touchMove);
+					host.onTouchEnd.Add(__touchEnd);
+				}
+			}
 			else
 			{
-				host.onTouchBegin.Remove(__touchBegin);
-				Stage.inst.onTouchMove.Remove(__touchMove);
-				Stage.inst.onTouchEnd.Remove(__touchEnd);
+				_started = false;
+				if (host == GRoot.inst)
+				{
+					Stage.inst.onTouchBegin.Remove(__touchBegin);
+					Stage.inst.onTouchMove.Remove(__touchMove);
+					Stage.inst.onTouchEnd.Remove(__touchEnd);
+				}
+				else
+				{
+					host.onTouchBegin.Remove(__touchBegin);
+					host.onTouchMove.Remove(__touchMove);
+					host.onTouchEnd.Remove(__touchEnd);
+				}
 			}
 		}
 
@@ -100,8 +124,7 @@ namespace FairyGUI
 		{
 			if (Stage.inst.touchCount > 1)
 			{
-				Stage.inst.onTouchMove.Remove(__touchMove);
-				Stage.inst.onTouchEnd.Remove(__touchEnd);
+				_began = false;
 				if (_started)
 				{
 					_started = false;
@@ -118,14 +141,14 @@ namespace FairyGUI
 			_started = false;
 			velocity = Vector2.zero;
 			position = Vector2.zero;
+			_began = true;
 
-			Stage.inst.onTouchMove.Add(__touchMove);
-			Stage.inst.onTouchEnd.Add(__touchEnd);
+			context.CaptureTouch();
 		}
 
 		void __touchMove(EventContext context)
 		{
-			if (Stage.inst.touchCount > 1)
+			if (Stage.inst.touchCount > 1 || !_began)
 				return;
 
 			InputEvent evt = context.inputEvent;
@@ -168,16 +191,13 @@ namespace FairyGUI
 
 		void __touchEnd(EventContext context)
 		{
-			InputEvent evt = context.inputEvent;
-
-			Stage.inst.onTouchMove.Remove(__touchMove);
-			Stage.inst.onTouchEnd.Remove(__touchEnd);
-
 			if (!_started)
 				return;
 
 			_started = false;
+			_began = false;
 
+			InputEvent evt = context.inputEvent;
 			Vector2 pt = host.GlobalToLocal(new Vector2(evt.x, evt.y));
 			delta = pt - _lastPoint;
 			if (snapping)

@@ -307,7 +307,8 @@ namespace FairyGUI
 			set
 			{
 				int i = _pageIds.IndexOf(value);
-				this.selectedIndex = i;
+				if (i != -1)
+					this.selectedIndex = i;
 			}
 		}
 
@@ -407,7 +408,7 @@ namespace FairyGUI
 				}
 			}
 
-			if (parent != null && _pageIds.Count >= 0)
+			if (parent != null && _pageIds.Count > 0)
 				_selectedIndex = 0;
 			else
 				_selectedIndex = -1;

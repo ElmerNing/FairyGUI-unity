@@ -25,6 +25,11 @@ namespace FairyGUI
 		/// <summary>
 		/// 
 		/// </summary>
+		public char character { get; internal set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
 		public EventModifiers modifiers { get; internal set; }
 
 		/// <summary>
@@ -38,7 +43,7 @@ namespace FairyGUI
 		public int touchId { get; internal set; }
 
 		/// <summary>
-		/// 0-left 1-right 2-middle
+		/// -1-none,0-left,1-right,2-middle
 		/// </summary>
 		public int button { get; internal set; }
 
@@ -52,6 +57,7 @@ namespace FairyGUI
 			y = 0;
 			clickCount = 0;
 			keyCode = KeyCode.None;
+			character = '\0';
 			modifiers = 0;
 			mouseWheelDelta = 0;
 		}

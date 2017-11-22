@@ -24,14 +24,11 @@ namespace FairyGUI
 		GObject _gripObject;
 		Vector2 _clickPos;
 		float _clickPercent;
-		int _touchId;
 		float _barStartX;
 		float _barStartY;
 
 		public bool changeOnClick;
 		public bool canDrag;
-
-		EventCallback1 _touchMoveDelegate;
 
 		/// <summary>
 		/// 
@@ -52,8 +49,6 @@ namespace FairyGUI
 
 			onChanged = new EventListener(this, "onChanged");
 			onGripTouchEnd = new EventListener(this, "onGripTouchEnd");
-
-			_touchMoveDelegate = __gripTouchMove;
 		}
 
 		/// <summary>
@@ -148,21 +143,49 @@ namespace FairyGUI
 			if (!_reverse)
 			{
 				if (_barObjectH != null)
-					_barObjectH.width = fullWidth * percent;
+				{
+					if ((_barObjectH is GImage) && ((GImage)_barObjectH).fillMethod != FillMethod.None)
+						((GImage)_barObjectH).fillAmount = percent;
+					else if ((_barObjectH is GLoader) && ((GLoader)_barObjectH).fillMethod != FillMethod.None)
+						((GLoader)_barObjectH).fillAmount = percent;
+					else
+						_barObjectH.width = Mathf.RoundToInt(fullWidth * percent);
+				}
 				if (_barObjectV != null)
-					_barObjectV.height = fullHeight * percent;
+				{
+					if ((_barObjectV is GImage) && ((GImage)_barObjectV).fillMethod != FillMethod.None)
+						((GImage)_barObjectV).fillAmount = percent;
+					else if ((_barObjectV is GLoader) && ((GLoader)_barObjectV).fillMethod != FillMethod.None)
+						((GLoader)_barObjectV).fillAmount = percent;
+					else
+						_barObjectV.height = Mathf.RoundToInt(fullHeight * percent);
+				}
 			}
 			else
 			{
 				if (_barObjectH != null)
 				{
-					_barObjectH.width = Mathf.RoundToInt(fullWidth * percent);
-					_barObjectH.x = _barStartX + (fullWidth - _barObjectH.width);
+					if ((_barObjectH is GImage) && ((GImage)_barObjectH).fillMethod != FillMethod.None)
+						((GImage)_barObjectH).fillAmount = 1 - percent;
+					else if ((_barObjectH is GLoader) && ((GLoader)_barObjectH).fillMethod != FillMethod.None)
+						((GLoader)_barObjectH).fillAmount = 1 - percent;
+					else
+					{
+						_barObjectH.width = Mathf.RoundToInt(fullWidth * percent);
+						_barObjectH.x = _barStartX + (fullWidth - _barObjectH.width);
+					}
 				}
 				if (_barObjectV != null)
 				{
-					_barObjectV.height = Mathf.RoundToInt(fullHeight * percent);
-					_barObjectV.y = _barStartY + (fullHeight - _barObjectV.height);
+					if ((_barObjectV is GImage) && ((GImage)_barObjectV).fillMethod != FillMethod.None)
+						((GImage)_barObjectV).fillAmount = 1 - percent;
+					else if ((_barObjectV is GLoader) && ((GLoader)_barObjectV).fillMethod != FillMethod.None)
+						((GLoader)_barObjectV).fillAmount = 1 - percent;
+					else
+					{
+						_barObjectV.height = Mathf.RoundToInt(fullHeight * percent);
+						_barObjectV.y = _barStartY + (fullHeight - _barObjectV.height);
+					}
 				}
 			}
 
@@ -204,6 +227,7 @@ namespace FairyGUI
 			if (_gripObject != null)
 			{
 				_gripObject.onTouchBegin.Add(__gripTouchBegin);
+				_gripObject.onTouchMove.Add(__gripTouchMove);
 				_gripObject.onTouchEnd.Add(__gripTouchEnd);
 			}
 
@@ -239,16 +263,17 @@ namespace FairyGUI
 		private void __gripTouchBegin(EventContext context)
 		{
 			this.canDrag = true;
+
 			context.StopPropagation();
 
 			InputEvent evt = context.inputEvent;
-			_touchId = evt.touchId;
+			if (evt.button != 0)
+				return;
+
+			context.CaptureTouch();
 
 			_clickPos = this.GlobalToLocal(new Vector2(evt.x, evt.y));
 			_clickPercent = (float)(_value / _max);
-
-			context.CaptureTouch();
-			Stage.inst.onTouchMove.Add(_touchMoveDelegate);
 		}
 
 		private void __gripTouchMove(EventContext context)
@@ -257,9 +282,6 @@ namespace FairyGUI
 				return;
 
 			InputEvent evt = context.inputEvent;
-			if (_touchId != evt.touchId)
-				return;
-
 			Vector2 pt = this.GlobalToLocal(new Vector2(evt.x, evt.y));
 			if (float.IsNaN(pt.x))
 				return;
@@ -293,15 +315,6 @@ namespace FairyGUI
 
 		private void __gripTouchEnd(EventContext context)
 		{
-			InputEvent evt = context.inputEvent;
-			if (_touchId != evt.touchId)
-				return;
-
-			Stage.inst.onTouchMove.Remove(_touchMoveDelegate);
-
-			if (displayObject == null || displayObject.isDisposed)
-				return;
-
 			onGripTouchEnd.Call();
 		}
 

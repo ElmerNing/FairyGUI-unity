@@ -71,6 +71,11 @@ namespace FairyGUI
 		/// <summary>
 		/// 
 		/// </summary>
+		public EventListener onTouchMove { get; private set; }
+
+		/// <summary>
+		/// 
+		/// </summary>
 		public EventListener onTouchEnd { get; private set; }
 
 		/// <summary>
@@ -159,6 +164,7 @@ namespace FairyGUI
 			onClick = new EventListener(this, "onClick");
 			onRightClick = new EventListener(this, "onRightClick");
 			onTouchBegin = new EventListener(this, "onTouchBegin");
+			onTouchMove = new EventListener(this, "onTouchMove");
 			onTouchEnd = new EventListener(this, "onTouchEnd");
 			onRollOver = new EventListener(this, "onRollOver");
 			onRollOut = new EventListener(this, "onRollOut");
@@ -573,6 +579,10 @@ namespace FairyGUI
 			{
 				_skew = value;
 				_outlineChanged = true;
+
+				if (!Application.isPlaying) //编辑期间不支持！！
+					return;
+
 				UpdateTransformMatrix();
 			}
 		}

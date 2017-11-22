@@ -125,6 +125,7 @@ namespace FairyGUI
 			public Vector2 size;
 			public GObject obj;
 			public uint updateFlag;
+			public bool selected;
 		}
 		List<ItemInfo> _virtualItems;
 
@@ -161,6 +162,7 @@ namespace FairyGUI
 				Timers.inst.Remove(this.RefreshVirtualList);
 
 			_selectionController = null;
+			scrollItemToViewOnClick = false;
 
 			base.Dispose();
 		}
@@ -454,21 +456,45 @@ namespace FairyGUI
 		{
 			get
 			{
-				int cnt = _children.Count;
-				for (int i = 0; i < cnt; i++)
+				if (_virtual)
 				{
-					GButton obj = _children[i].asButton;
-					if (obj != null && obj.selected)
-						return ChildIndexToItemIndex(i);
+					int cnt = _realNumItems;
+					for (int i = 0; i < cnt; i++)
+					{
+						ItemInfo ii = _virtualItems[i];
+						if ((ii.obj is GButton) && ((GButton)ii.obj).selected
+							|| ii.obj == null && ii.selected)
+						{
+							if (_loop)
+								return i % _numItems;
+							else
+								return i;
+						}
+					}
+				}
+				else
+				{
+					int cnt = _children.Count;
+					for (int i = 0; i < cnt; i++)
+					{
+						GButton obj = _children[i].asButton;
+						if (obj != null && obj.selected)
+							return i;
+					}
 				}
 				return -1;
 			}
 
 			set
 			{
-				ClearSelection();
 				if (value >= 0 && value < this.numItems)
+				{
+					if (selectionMode != ListSelectionMode.Single)
+						ClearSelection();
 					AddSelection(value, false);
+				}
+				else
+					ClearSelection();
 			}
 		}
 
@@ -488,12 +514,34 @@ namespace FairyGUI
 		public List<int> GetSelection()
 		{
 			List<int> ret = new List<int>();
-			int cnt = _children.Count;
-			for (int i = 0; i < cnt; i++)
+			if (_virtual)
 			{
-				GButton obj = _children[i].asButton;
-				if (obj != null && obj.selected)
-					ret.Add(ChildIndexToItemIndex(i));
+				int cnt = _realNumItems;
+				for (int i = 0; i < cnt; i++)
+				{
+					ItemInfo ii = _virtualItems[i];
+					if ((ii.obj is GButton) && ((GButton)ii.obj).selected
+						|| ii.obj == null && ii.selected)
+					{
+						if (_loop)
+						{
+							i = i % _numItems;
+							if (ret.Contains(i))
+								continue;
+						}
+						ret.Add(i);
+					}
+				}
+			}
+			else
+			{
+				int cnt = _children.Count;
+				for (int i = 0; i < cnt; i++)
+				{
+					GButton obj = _children[i].asButton;
+					if (obj != null && obj.selected)
+						ret.Add(i);
+				}
 			}
 			return ret;
 		}
@@ -516,11 +564,18 @@ namespace FairyGUI
 			if (scrollItToView)
 				ScrollToView(index);
 
-			index = ItemIndexToChildIndex(index);
-			if (index < 0 || index >= _children.Count)
-				return;
+			_lastSelectedIndex = index;
+			GButton obj = null;
+			if (_virtual)
+			{
+				ItemInfo ii = _virtualItems[index];
+				if (ii.obj != null)
+					obj = ii.obj.asButton;
+				ii.selected = true;
+			}
+			else
+				obj = GetChildAt(index).asButton;
 
-			GButton obj = GetChildAt(index).asButton;
 			if (obj != null && !obj.selected)
 			{
 				obj.selected = true;
@@ -537,12 +592,18 @@ namespace FairyGUI
 			if (selectionMode == ListSelectionMode.None)
 				return;
 
-			index = ItemIndexToChildIndex(index);
-			if (index < 0 || index >= _children.Count)
-				return;
+			GButton obj = null;
+			if (_virtual)
+			{
+				ItemInfo ii = _virtualItems[index];
+				if (ii.obj != null)
+					obj = ii.obj.asButton;
+				ii.selected = false;
+			}
+			else
+				obj = GetChildAt(index).asButton;
 
-			GButton obj = GetChildAt(index).asButton;
-			if (obj != null && obj.selected)
+			if (obj != null)
 				obj.selected = false;
 		}
 
@@ -551,12 +612,54 @@ namespace FairyGUI
 		/// </summary>
 		public void ClearSelection()
 		{
-			int cnt = _children.Count;
-			for (int i = 0; i < cnt; i++)
+			if (_virtual)
 			{
-				GButton obj = _children[i].asButton;
-				if (obj != null)
-					obj.selected = false;
+				int cnt = _realNumItems;
+				for (int i = 0; i < cnt; i++)
+				{
+					ItemInfo ii = _virtualItems[i];
+					if ((ii.obj is GButton))
+						((GButton)ii.obj).selected = false;
+					ii.selected = false;
+				}
+			}
+			else
+			{
+				int cnt = _children.Count;
+				for (int i = 0; i < cnt; i++)
+				{
+					GButton obj = _children[i].asButton;
+					if (obj != null)
+						obj.selected = false;
+				}
+			}
+		}
+
+		void ClearSelectionExcept(GObject g)
+		{
+			if (_virtual)
+			{
+				int cnt = _realNumItems;
+				for (int i = 0; i < cnt; i++)
+				{
+					ItemInfo ii = _virtualItems[i];
+					if (ii.obj != g)
+					{
+						if ((ii.obj is GButton))
+							((GButton)ii.obj).selected = false;
+						ii.selected = false;
+					}
+				}
+			}
+			else
+			{
+				int cnt = _children.Count;
+				for (int i = 0; i < cnt; i++)
+				{
+					GButton obj = _children[i].asButton;
+					if (obj != null && obj != g)
+						obj.selected = false;
+				}
 			}
 		}
 
@@ -567,15 +670,32 @@ namespace FairyGUI
 		{
 			CheckVirtualList();
 
-			int cnt = _children.Count;
 			int last = -1;
-			for (int i = 0; i < cnt; i++)
+			if (_virtual)
 			{
-				GButton obj = _children[i].asButton;
-				if (obj != null)
+				int cnt = _realNumItems;
+				for (int i = 0; i < cnt; i++)
 				{
-					obj.selected = true;
-					last = i;
+					ItemInfo ii = _virtualItems[i];
+					if ((ii.obj is GButton) && !((GButton)ii.obj).selected)
+					{
+						((GButton)ii.obj).selected = true;
+						last = i;
+					}
+					ii.selected = true;
+				}
+			}
+			else
+			{
+				int cnt = _children.Count;
+				for (int i = 0; i < cnt; i++)
+				{
+					GButton obj = _children[i].asButton;
+					if (obj != null && !obj.selected)
+					{
+						obj.selected = true;
+						last = i;
+					}
 				}
 			}
 
@@ -588,13 +708,7 @@ namespace FairyGUI
 		/// </summary>
 		public void SelectNone()
 		{
-			int cnt = _children.Count;
-			for (int i = 0; i < cnt; i++)
-			{
-				GButton obj = _children[i].asButton;
-				if (obj != null)
-					obj.selected = false;
-			}
+			ClearSelection();
 		}
 
 		/// <summary>
@@ -604,16 +718,34 @@ namespace FairyGUI
 		{
 			CheckVirtualList();
 
-			int cnt = _children.Count;
 			int last = -1;
-			for (int i = 0; i < cnt; i++)
+			if (_virtual)
 			{
-				GButton obj = _children[i].asButton;
-				if (obj != null)
+				int cnt = _realNumItems;
+				for (int i = 0; i < cnt; i++)
 				{
-					obj.selected = !obj.selected;
-					if (obj.selected)
-						last = i;
+					ItemInfo ii = _virtualItems[i];
+					if ((ii.obj is GButton))
+					{
+						((GButton)ii.obj).selected = !((GButton)ii.obj).selected;
+						if (((GButton)ii.obj).selected)
+							last = i;
+					}
+					ii.selected = !ii.selected;
+				}
+			}
+			else
+			{
+				int cnt = _children.Count;
+				for (int i = 0; i < cnt; i++)
+				{
+					GButton obj = _children[i].asButton;
+					if (obj != null)
+					{
+						obj.selected = !obj.selected;
+						if (obj.selected)
+							last = i;
+					}
 				}
 			}
 
@@ -837,7 +969,7 @@ namespace FairyGUI
 			_selectionHandled = true;
 			bool dontChangeLastIndex = false;
 			GButton button = (GButton)item;
-			int index = GetChildIndex(item);
+			int index = ChildIndexToItemIndex(GetChildIndex(item));
 
 			if (selectionMode == ListSelectionMode.Single)
 			{
@@ -857,12 +989,25 @@ namespace FairyGUI
 						{
 							int min = Math.Min(_lastSelectedIndex, index);
 							int max = Math.Max(_lastSelectedIndex, index);
-							max = Math.Min(max, _children.Count - 1);
-							for (int i = min; i <= max; i++)
+							max = Math.Min(max, this.numItems - 1);
+							if (_virtual)
 							{
-								GButton obj = GetChildAt(i).asButton;
-								if (obj != null && !obj.selected)
-									obj.selected = true;
+								for (int i = min; i <= max; i++)
+								{
+									ItemInfo ii = _virtualItems[i];
+									if (ii.obj is GButton)
+										((GButton)ii.obj).selected = true;
+									ii.selected = true;
+								}
+							}
+							else
+							{
+								for (int i = min; i <= max; i++)
+								{
+									GButton obj = GetChildAt(i).asButton;
+									if (obj != null && !obj.selected)
+										obj.selected = true;
+								}
 							}
 
 							dontChangeLastIndex = true;
@@ -894,17 +1039,6 @@ namespace FairyGUI
 
 			if (button.selected)
 				UpdateSelectionController(index);
-		}
-
-		void ClearSelectionExcept(GObject obj)
-		{
-			int cnt = _children.Count;
-			for (int i = 0; i < cnt; i++)
-			{
-				GButton button = _children[i].asButton;
-				if (button != null && button != obj && button.selected)
-					button.selected = false;
-			}
 		}
 
 		/// <summary>
@@ -1307,6 +1441,11 @@ namespace FairyGUI
 
 							_virtualItems.Add(ii);
 						}
+					}
+					else
+					{
+						for (int i = _realNumItems; i < oldCount; i++)
+							_virtualItems[i].selected = false;
 					}
 
 					if (this._virtualListChanged != 0)
@@ -1713,6 +1852,8 @@ namespace FairyGUI
 
 					if (ii.obj != null && ii.obj.resourceURL != url)
 					{
+						if (ii.obj is GButton)
+							ii.selected = ((GButton)ii.obj).selected;
 						RemoveChildToPool(ii.obj);
 						ii.obj = null;
 					}
@@ -1728,6 +1869,8 @@ namespace FairyGUI
 							ItemInfo ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = ((GButton)ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1743,6 +1886,8 @@ namespace FairyGUI
 							ItemInfo ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = ((GButton)ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1765,7 +1910,7 @@ namespace FairyGUI
 							this.AddChild(ii.obj);
 					}
 					if (ii.obj is GButton)
-						((GButton)ii.obj).selected = false;
+						((GButton)ii.obj).selected = ii.selected;
 
 					needRender = true;
 				}
@@ -1811,6 +1956,8 @@ namespace FairyGUI
 				ItemInfo ii = _virtualItems[oldFirstIndex + i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = ((GButton)ii.obj).selected;
 					RemoveChildToPool(ii.obj);
 					ii.obj = null;
 				}
@@ -1874,6 +2021,8 @@ namespace FairyGUI
 
 					if (ii.obj != null && ii.obj.resourceURL != url)
 					{
+						if (ii.obj is GButton)
+							ii.selected = ((GButton)ii.obj).selected;
 						RemoveChildToPool(ii.obj);
 						ii.obj = null;
 					}
@@ -1888,6 +2037,8 @@ namespace FairyGUI
 							ItemInfo ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = ((GButton)ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1903,6 +2054,8 @@ namespace FairyGUI
 							ItemInfo ii2 = _virtualItems[j];
 							if (ii2.obj != null && ii2.updateFlag != itemInfoVer && ii2.obj.resourceURL == url)
 							{
+								if (ii2.obj is GButton)
+									ii2.selected = ((GButton)ii2.obj).selected;
 								ii.obj = ii2.obj;
 								ii2.obj = null;
 								if (j == reuseIndex)
@@ -1925,7 +2078,7 @@ namespace FairyGUI
 							this.AddChild(ii.obj);
 					}
 					if (ii.obj is GButton)
-						((GButton)ii.obj).selected = false;
+						((GButton)ii.obj).selected = ii.selected;
 
 					needRender = true;
 				}
@@ -1971,6 +2124,8 @@ namespace FairyGUI
 				ItemInfo ii = _virtualItems[oldFirstIndex + i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = ((GButton)ii.obj).selected;
 					RemoveChildToPool(ii.obj);
 					ii.obj = null;
 				}
@@ -2054,6 +2209,8 @@ namespace FairyGUI
 						ItemInfo ii2 = _virtualItems[reuseIndex];
 						if (ii2.obj != null && ii2.updateFlag != itemInfoVer)
 						{
+							if (ii2.obj is GButton)
+								ii2.selected = ((GButton)ii2.obj).selected;
 							ii.obj = ii2.obj;
 							ii2.obj = null;
 							break;
@@ -2084,7 +2241,7 @@ namespace FairyGUI
 					insertIndex++;
 
 					if (ii.obj is GButton)
-						((GButton)ii.obj).selected = false;
+						((GButton)ii.obj).selected = ii.selected;
 
 					needRender = true;
 				}
@@ -2152,6 +2309,8 @@ namespace FairyGUI
 				ItemInfo ii = _virtualItems[i];
 				if (ii.updateFlag != itemInfoVer && ii.obj != null)
 				{
+					if (ii.obj is GButton)
+						ii.selected = ((GButton)ii.obj).selected;
 					RemoveChildToPool(ii.obj);
 					ii.obj = null;
 				}
