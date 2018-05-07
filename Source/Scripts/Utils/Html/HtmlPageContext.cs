@@ -25,22 +25,32 @@ namespace FairyGUI.Utils
 			_buttonPool = new Stack<IHtmlObject>();
 			_selectPool = new Stack<IHtmlObject>();
 			_linkPool = new Stack<IHtmlObject>();
+
+			if (Application.isPlaying && _poolManager == null)
+				_poolManager = Stage.inst.CreatePoolManager("HtmlObjectPool");
 		}
 
 		virtual public IHtmlObject CreateObject(RichTextField owner, HtmlElement element)
 		{
 			IHtmlObject ret = null;
+			bool fromPool = false;
 			if (element.type == HtmlElementType.Image)
 			{
-				if (_imagePool.Count > 0 && Application.isPlaying)
+				if (_imagePool.Count > 0 && _poolManager != null)
+				{
 					ret = _imagePool.Pop();
+					fromPool = true;
+				}
 				else
 					ret = new HtmlImage();
 			}
 			else if (element.type == HtmlElementType.Link)
 			{
-				if (_linkPool.Count > 0 && Application.isPlaying)
+				if (_linkPool.Count > 0 && _poolManager != null)
+				{
 					ret = _linkPool.Pop();
+					fromPool = true;
+				}
 				else
 					ret = new HtmlLink();
 			}
@@ -51,29 +61,46 @@ namespace FairyGUI.Utils
 					type = type.ToLower();
 				if (type == "button" || type == "submit")
 				{
-					if (_buttonPool.Count > 0 && Application.isPlaying)
+					if (_buttonPool.Count > 0 && _poolManager != null)
+					{
 						ret = _buttonPool.Pop();
+						fromPool = true;
+					}
 					else
 						ret = new HtmlButton();
 				}
 				else
 				{
-					if (_inputPool.Count > 0 && Application.isPlaying)
+					if (_inputPool.Count > 0 && _poolManager != null)
+					{
 						ret = _inputPool.Pop();
+						fromPool = true;
+					}
 					else
 						ret = new HtmlInput();
 				}
 			}
 			else if (element.type == HtmlElementType.Select)
 			{
-				if (_selectPool.Count > 0 && Application.isPlaying)
+				if (_selectPool.Count > 0 && _poolManager != null)
+				{
 					ret = _selectPool.Pop();
+					fromPool = true;
+				}
 				else
 					ret = new HtmlSelect();
 			}
 
+			//Debug.Log("from=" + fromPool);
 			if (ret != null)
 			{
+				//可能已经被GameObject tree deleted了，不再使用
+				if (fromPool && ret.displayObject != null && ret.displayObject.isDisposed)
+				{
+					ret.Dispose();
+					return CreateObject(owner, element);
+
+				}
 				ret.Create(owner, element);
 				if (ret.displayObject != null)
 					ret.displayObject.home = owner.cachedTransform;
@@ -84,8 +111,7 @@ namespace FairyGUI.Utils
 
 		virtual public void FreeObject(IHtmlObject obj)
 		{
-			obj.Release();
-			if (!Application.isPlaying)
+			if (_poolManager == null)
 			{
 				obj.Dispose();
 				return;
@@ -93,8 +119,12 @@ namespace FairyGUI.Utils
 
 			//可能已经被GameObject tree deleted了，不再回收
 			if (obj.displayObject != null && obj.displayObject.isDisposed)
+			{
+				obj.Dispose();
 				return;
+			}
 
+			obj.Release();
 			if (obj is HtmlImage)
 				_imagePool.Push(obj);
 			else if (obj is HtmlInput)
@@ -105,12 +135,7 @@ namespace FairyGUI.Utils
 				_linkPool.Push(obj);
 
 			if (obj.displayObject != null)
-			{
-				if (_poolManager == null)
-					_poolManager = Stage.inst.CreatePoolManager("HtmlObjectPool");
-
 				ToolSet.SetParent(obj.displayObject.cachedTransform, _poolManager);
-			}
 		}
 
 		virtual public NTexture GetImageTexture(HtmlImage image)

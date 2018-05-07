@@ -35,7 +35,7 @@ namespace FairyGUI
 		/// <param name="extension"></param>
 		/// <param name="type"></param>
 		/// <returns></returns>
-		public delegate UnityEngine.Object LoadResource(string name, string extension, System.Type type);
+		public delegate object LoadResource(string name, string extension, System.Type type);
 
 		/// <summary>
 		/// 
@@ -53,6 +53,7 @@ namespace FairyGUI
 		string _customId;
 		bool _fromBundle;
 		bool _loadingPackage;
+		bool _unloadBundleAfterLoaded;
 
 		class AtlasSprite
 		{
@@ -114,8 +115,9 @@ namespace FairyGUI
 		/// <returns>UIPackage</returns>
 		public static UIPackage AddPackage(AssetBundle bundle)
 		{
-			return AddPackage(bundle, bundle, null);
+			return AddPackage(bundle, true);
 		}
+
 
 		/// <summary>
 		/// Add a UI package from two assetbundles. desc and res can be same.
@@ -125,7 +127,7 @@ namespace FairyGUI
 		/// <returns>UIPackage</returns>
 		public static UIPackage AddPackage(AssetBundle desc, AssetBundle res)
 		{
-			return AddPackage(desc, res, null);
+			return AddPackage(desc, res, true);
 		}
 
 		/// <summary>
@@ -136,6 +138,42 @@ namespace FairyGUI
 		/// <param name="mainAssetName">Main asset name.</param>
 		/// <returns>UIPackage</returns>
 		public static UIPackage AddPackage(AssetBundle desc, AssetBundle res, string mainAssetName)
+		{
+			return AddPackage(desc, res, mainAssetName, true);
+		}
+
+		/// <summary>
+		/// Add a UI package from assetbundle.
+		/// </summary>
+		/// <param name="bundle">A assetbundle.</param>
+		/// <param name="unloadBundleAfterLoaded">whether to unload the bundles after package loaded.</param>
+		/// <returns>UIPackage</returns>
+		public static UIPackage AddPackage(AssetBundle bundle, bool unloadBundleAfterLoaded)
+		{
+			return AddPackage(bundle, bundle, null, unloadBundleAfterLoaded);
+		}
+
+		/// <summary>
+		/// Add a UI package from two assetbundles. desc and res can be same.
+		/// </summary>
+		/// <param name="desc">A assetbunble contains description file.</param>
+		/// <param name="res">A assetbundle contains resources.</param>
+		/// <param name="unloadBundleAfterLoaded">whether to unload the bundles after package loaded.</param>
+		/// <returns>UIPackage</returns>
+		public static UIPackage AddPackage(AssetBundle desc, AssetBundle res, bool unloadBundleAfterLoaded)
+		{
+			return AddPackage(desc, res, null, unloadBundleAfterLoaded);
+		}
+
+		/// <summary>
+		/// Add a UI package from two assetbundles with a optional main asset name.
+		/// </summary>
+		/// <param name="desc">A assetbunble contains description file.</param>
+		/// <param name="res">A assetbundle contains resources.</param>
+		/// <param name="mainAssetName">Main asset name.</param>
+		/// <param name="unloadBundleAfterLoaded">whether to unload the bundles after package loaded.</param>
+		/// <returns>UIPackage</returns>
+		public static UIPackage AddPackage(AssetBundle desc, AssetBundle res, string mainAssetName, bool unloadBundleAfterLoaded)
 		{
 			byte[] source = null;
 #if (UNITY_5 || UNITY_5_3_OR_NEWER)
@@ -178,11 +216,14 @@ namespace FairyGUI
 #endif
 			if (source == null)
 				throw new Exception("FairyGUI: invalid package.");
-			if (desc != res)
-				desc.Unload(true);
+			if (unloadBundleAfterLoaded)
+			{
+				if (desc != res)
+					desc.Unload(true);
+			}
 
 			UIPackage pkg = new UIPackage();
-			pkg.Create(source, res, mainAssetName, null);
+			pkg.Create(source, res, mainAssetName, null, unloadBundleAfterLoaded);
 			_packageInstById[pkg.id] = pkg;
 			_packageInstByName[pkg.name] = pkg;
 			_packageList.Add(pkg);
@@ -220,7 +261,7 @@ namespace FairyGUI
 			}
 
 			UIPackage pkg = new UIPackage();
-			pkg.Create(asset.bytes, null, assetPath, loadFunc);
+			pkg.Create(asset.bytes, null, assetPath, loadFunc, false);
 			if (_packageInstById.ContainsKey(pkg.id))
 				Debug.LogWarning("FairyGUI: Package id conflicts, '" + pkg.name + "' and '" + _packageInstById[pkg.id].name + "'");
 			_packageInstById[pkg.id] = pkg;
@@ -242,7 +283,7 @@ namespace FairyGUI
 		public static UIPackage AddPackage(byte[] descData, string assetNamePrefix, LoadResource loadFunc)
 		{
 			UIPackage pkg = new UIPackage();
-			pkg.Create(descData, null, assetNamePrefix, loadFunc);
+			pkg.Create(descData, null, assetNamePrefix, loadFunc, false);
 			if (_packageInstById.ContainsKey(pkg.id))
 				Debug.LogWarning("FairyGUI: Package id conflicts, '" + pkg.name + "' and '" + _packageInstById[pkg.id].name + "'");
 			_packageInstById[pkg.id] = pkg;
@@ -564,11 +605,12 @@ namespace FairyGUI
 				return null;
 		}
 
-		void Create(byte[] desc, AssetBundle res, string assetNamePrefix, LoadResource loadFunc)
+		void Create(byte[] desc, AssetBundle res, string assetNamePrefix, LoadResource loadFunc, bool unloadBundleAfterLoaded)
 		{
 			_descPack = new Dictionary<string, string>();
 			_resBundle = res;
 			_loadFunc = loadFunc;
+			_unloadBundleAfterLoaded = unloadBundleAfterLoaded;
 
 			if (!Application.isPlaying)
 				UIObjectFactory.Clear();
@@ -768,13 +810,20 @@ namespace FairyGUI
 			else
 				_items.Sort(ComparePackageItem);
 
-			if (_resBundle != null)
+			if (_resBundle != null && _unloadBundleAfterLoaded)
 			{
-				_resBundle.Unload(false);
+				//https://forum.unity.com/threads/opening-file-failed-opening-file-archive-cab-ca6e2cdc278a53641b19581a975bffc5-cab-ca6e2cdc278a53641.488402/
+				//if you still encouter this problem, try AddPackage(bundle, false);
+				Timers.inst.Add(0.5f, 1, UnloadResBundle, _resBundle);
 				_resBundle = null;
 			}
 
 			_loadingPackage = false;
+		}
+
+		void UnloadResBundle(object param)
+		{
+			((AssetBundle)param).Unload(false);
 		}
 
 		static int ComparePackageItem(PackageItem p1, PackageItem p2)
@@ -821,7 +870,7 @@ namespace FairyGUI
 			}
 			_items.Clear();
 
-			if (_resBundle != null)
+			if (_resBundle != null && _unloadBundleAfterLoaded)
 				_resBundle.Unload(true);
 		}
 
@@ -883,7 +932,7 @@ namespace FairyGUI
 			if (item.type == PackageItemType.Component)
 			{
 				if (userClass != null)
-					g = (GComponent)userClass.Assembly.CreateInstance(userClass.FullName);
+					g = (GComponent)Activator.CreateInstance(userClass);
 				else
 					g = UIObjectFactory.NewObject(item);
 			}
@@ -1148,26 +1197,32 @@ namespace FairyGUI
 			string filePath = _assetNamePrefix + Path.GetFileNameWithoutExtension(fileName);
 			string ext = Path.GetExtension(fileName);
 
-			Texture2D tex;
+			Texture tex;
 			if (_resBundle != null)
 			{
 #if (UNITY_5 || UNITY_5_3_OR_NEWER)
-				tex = _resBundle.LoadAsset<Texture2D>(filePath);
+				tex = _resBundle.LoadAsset<Texture>(filePath);
 #else
 				tex = (Texture2D)_resBundle.Load(filePath, typeof(Texture2D));
 #endif
 			}
 			else
-				tex = (Texture2D)_loadFunc(filePath, ext, typeof(Texture2D));
+				tex = (Texture)_loadFunc(filePath, ext, typeof(Texture));
 			if (tex == null)
 			{
 				Debug.LogWarning("FairyGUI: texture '" + fileName + "' not found in " + this.name);
 				item.texture = NTexture.Empty;
 			}
+			else if (!(tex is Texture2D))
+			{
+				Debug.LogWarning("FairyGUI: settings for '" + filePath + "' is wrong! Correct values are: (Texture Type=Default, Texture Shape=2D)");
+				item.texture = NTexture.Empty;
+			}
 			else
 			{
-				if (tex.mipmapCount > 1)
-					Debug.LogWarning("FairyGUI: texture '" + fileName + "' in " + this.name + " is mipmaps enabled.");
+				if (((Texture2D)tex).mipmapCount > 1)
+					Debug.LogWarning("FairyGUI: settings for '" + filePath + "' is wrong! Correct values are: (Generate Mip Maps=unchecked)");
+
 				item.texture = new NTexture(tex, (float)tex.width / item.width, (float)tex.height / item.height);
 				item.texture.storedODisk = _resBundle == null;
 

@@ -87,11 +87,22 @@ namespace FairyGUI.Utils
 			if (value == null || value.Length == 0)
 				return defValue;
 
-			int ret;
-			if (int.TryParse(value, out ret))
-				return ret;
+			if (value[value.Length - 1] == '%')
+			{
+				int ret;
+				if (int.TryParse(value.Substring(0, value.Length - 1), out ret))
+					return Mathf.CeilToInt(ret / 100.0f * defValue);
+				else
+					return defValue;
+			}
 			else
-				return defValue;
+			{
+				int ret;
+				if (int.TryParse(value, out ret))
+					return ret;
+				else
+					return defValue;
+			}
 		}
 
 		public float GetFloat(string attrName)
@@ -142,6 +153,12 @@ namespace FairyGUI.Utils
 		public void FetchAttributes()
 		{
 			attributes = XMLIterator.GetAttributes(attributes);
+		}
+
+
+		public bool isEntity
+		{
+			get { return type == HtmlElementType.Image || type == HtmlElementType.Select || type == HtmlElementType.Input || type == HtmlElementType.Object; }
 		}
 
 		#region Pool Support

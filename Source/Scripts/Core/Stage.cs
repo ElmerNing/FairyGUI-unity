@@ -542,16 +542,14 @@ namespace FairyGUI
 			}
 			else if (touchScreen)
 			{
+				_touchTarget = null;
 				for (int i = 0; i < Input.touchCount; ++i)
 				{
 					Touch uTouch = Input.GetTouch(i);
-					if (uTouch.phase == TouchPhase.Stationary)
-						continue;
 
 					Vector2 pos = uTouch.position;
 					pos.y = stageHeight - pos.y;
 
-					_touchTarget = null;
 					TouchInfo touch = null;
 					TouchInfo free = null;
 					for (int j = 0; j < 5; j++)
@@ -568,14 +566,19 @@ namespace FairyGUI
 					if (touch == null)
 					{
 						touch = free;
-						if (touch == null)
-							return;
+						if (touch == null || uTouch.phase != TouchPhase.Began)
+							continue;
 
 						touch.touchId = uTouch.fingerId;
 					}
 
-					_touchTarget = HitTest(pos, true);
-					touch.target = _touchTarget;
+					if (uTouch.phase == TouchPhase.Stationary)
+						_touchTarget = touch.target;
+					else
+					{
+						_touchTarget = HitTest(pos, true);
+						touch.target = _touchTarget;
+					}
 				}
 			}
 			else
@@ -584,13 +587,10 @@ namespace FairyGUI
 				pos.y = stageHeight - pos.y;
 
 				TouchInfo touch = _touches[0];
-				if (pos.x < 0 || pos.y < 0)
-				{
-					pos.x = touch.x;
-					pos.y = touch.y;
-				}
-
-				_touchTarget = HitTest(pos, true);
+				if (pos.x < 0 || pos.y < 0) //outside of the window
+					_touchTarget = this;
+				else
+					_touchTarget = HitTest(pos, true);
 				touch.target = _touchTarget;
 			}
 

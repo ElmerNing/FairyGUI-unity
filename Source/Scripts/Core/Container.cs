@@ -266,11 +266,9 @@ namespace FairyGUI
 						child.onRemovedFromStage.Call();
 				}
 				_children.Remove(child);
+				InvalidateBatchingState(true);
 				if (!dispose)
-				{
 					child.InternalSetParent(null);
-					InvalidateBatchingState(true);
-				}
 				else
 					child.Dispose();
 
@@ -910,6 +908,9 @@ namespace FairyGUI
 
 		public override void Dispose()
 		{
+			if (_disposed)
+				return;
+
 			base.Dispose(); //Destroy GameObject tree first, avoid destroying each seperately;
 
 			int numChildren = _children.Count;

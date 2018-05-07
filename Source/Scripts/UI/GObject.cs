@@ -109,12 +109,12 @@ namespace FairyGUI
 		public EventListener onTouchEnd { get; private set; }
 
 		/// <summary>
-		/// Only available for mouse input: the cursor hovers over an object.
+		/// The cursor or finger hovers over an object.
 		/// </summary>
 		public EventListener onRollOver { get; private set; }
 
 		/// <summary>
-		/// Only available for mouse input: the cursor leave an object.
+		/// The cursor or finger leave an object.
 		/// </summary>
 		public EventListener onRollOut { get; private set; }
 
@@ -174,6 +174,11 @@ namespace FairyGUI
 		public static GObject draggingObject { get; private set; }
 
 		/// <summary>
+		/// 
+		/// </summary>
+		public PackageItem packageItem;
+
+		/// <summary>
 		/// 当前是否释放
 		/// </summary>
 		public bool isDisposed = false;
@@ -207,7 +212,6 @@ namespace FairyGUI
 		//Size的实现方式，有两种，0-GObject的w/h等于DisplayObject的w/h。1-GObject的sourceWidth/sourceHeight等于DisplayObject的w/h，剩余部分由scale实现
 		protected int _sizeImplType;
 
-		internal PackageItem packageItem;
 		internal protected bool underConstruct;
 		internal float _width;
 		internal float _height;
@@ -322,6 +326,20 @@ namespace FairyGUI
 		}
 
 		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="xv"></param>
+		/// <param name="yv"></param>
+		/// <param name="topLeft"></param>
+		public void SetXY(float xv, float yv, bool topLeftValue)
+		{
+			if (_pivotAsAnchor)
+				SetPosition(xv + _pivotX * _width, yv + _pivotY * _height, _z);
+			else
+				SetPosition(xv, yv, _z);
+		}
+
+		/// <summary>
 		/// change the x,y,z coordinates of the object relative to the local coordinates of the parent.
 		/// </summary>
 		/// <param name="xv">x value.</param>
@@ -387,7 +405,7 @@ namespace FairyGUI
 			else
 				r = this.root;
 
-			this.SetXY((int)((r.width - this.width) / 2), (int)((r.height - this.height) / 2));
+			this.SetXY((int)((r.width - this.width) / 2), (int)((r.height - this.height) / 2), true);
 			if (restraint)
 			{
 				this.AddRelation(r, RelationType.Center_Center);
@@ -473,7 +491,7 @@ namespace FairyGUI
 		/// </summary>
 		/// <param name="wv">Width value.</param>
 		/// <param name="hv">Height value.</param>
-		/// <param name="ignorePivot">If pivot is set, the object's positon will change when its size change. Set ignorePivot=false to keep the position.</param>
+		/// <param name="ignorePivot">If pivot is set, the object's positon will change when its size change. Set ignorePivot=true to keep the position.</param>
 		public void SetSize(float wv, float hv, bool ignorePivot)
 		{
 			if (_rawWidth != wv || _rawHeight != hv)
@@ -490,6 +508,8 @@ namespace FairyGUI
 					hv = maxHeight;
 				float dWidth = wv - _width;
 				float dHeight = hv - _height;
+				float rightExt = dWidth;
+				float bottomExt = dHeight;
 				_width = wv;
 				_height = hv;
 
@@ -500,12 +520,22 @@ namespace FairyGUI
 					if (!_pivotAsAnchor)
 					{
 						if (!ignorePivot)
+						{
 							this.SetXY(_x - _pivotX * dWidth, _y - _pivotY * dHeight);
+
+							rightExt = dWidth * (1 - _pivotX);
+							bottomExt = dHeight * (1 - pivotY);
+						}
 						else
 							this.HandlePositionChanged();
 					}
 					else
+					{
 						this.HandlePositionChanged();
+
+						rightExt = dWidth * (1 - _pivotX);
+						bottomExt = dHeight * (1 - pivotY);
+					}
 				}
 
 				if (this is GGroup)
@@ -515,7 +545,7 @@ namespace FairyGUI
 
 				if (parent != null)
 				{
-					relations.OnOwnerSizeChanged(dWidth, dHeight);
+					relations.OnOwnerSizeChanged(rightExt, bottomExt);
 					parent.SetBoundsChangedFlag();
 					if (_group != null)
 						_group.SetBoundsChangedFlag(true);
@@ -535,6 +565,42 @@ namespace FairyGUI
 				hv = 0;
 			_width = wv;
 			_height = hv;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public float xMin
+		{
+			get
+			{
+				return _pivotAsAnchor ? (_x - _width * _pivotX) : _x;
+			}
+			set
+			{
+				if (_pivotAsAnchor)
+					SetPosition(value + _width * _pivotX, _y, _z);
+				else
+					SetPosition(value, _y, _z);
+			}
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		public float yMin
+		{
+			get
+			{
+				return _pivotAsAnchor ? (_y - _height * _pivotY) : _y;
+			}
+			set
+			{
+				if (_pivotAsAnchor)
+					SetPosition(_x, value + _height * _pivotY, _z);
+				else
+					SetPosition(_x, value, _z);
+			}
 		}
 
 		/// <summary>
@@ -638,6 +704,15 @@ namespace FairyGUI
 		{
 			get { return new Vector2(_pivotX, _pivotY); }
 			set { SetPivot(value.x, value.y); }
+		}
+
+		public bool pivotAsAnchor
+		{
+			get { return _pivotAsAnchor; }
+			set
+			{
+				SetPivot(_pivotX, _pivotY, value);
+			}
 		}
 
 		/// <summary>
@@ -794,15 +869,9 @@ namespace FairyGUI
 			set
 			{
 				_alpha = value;
-				UpdateAlpha();
+				HandleAlphaChanged();
+				UpdateGear(3);
 			}
-		}
-
-		virtual protected void UpdateAlpha()
-		{
-			if (displayObject != null)
-				displayObject.alpha = _alpha;
-			UpdateGear(3);
 		}
 
 		/// <summary>
@@ -820,22 +889,26 @@ namespace FairyGUI
 				if (_visible != value)
 				{
 					_visible = value;
-					if (displayObject != null)
-						displayObject.visible = _visible;
+					HandleVisibleChanged();
 					if (parent != null)
-					{
-						parent.ChildStateChanged(this);
 						parent.SetBoundsChangedFlag();
-					}
 				}
 			}
 		}
 
-		internal bool finalVisible
+		internal bool internalVisible
 		{
 			get
 			{
-				return _visible && _internalVisible && (group == null || group.finalVisible);
+				return _internalVisible && (group == null || group.internalVisible);
+			}
+		}
+
+		internal bool internalVisible2
+		{
+			get
+			{
+				return _visible && (group == null || group.internalVisible2);
 			}
 		}
 
@@ -1220,6 +1293,9 @@ namespace FairyGUI
 					_group = value;
 					if (_group != null)
 						_group.SetBoundsChangedFlag(true);
+					HandleVisibleChanged();
+					if (parent != null)
+						parent.ChildStateChanged(this);
 				}
 			}
 		}
@@ -1490,6 +1566,7 @@ namespace FairyGUI
 				displayObject.gOwner = null;
 				displayObject.Dispose();
 			}
+			data = null;
             isDisposed = true;
 		}
 
@@ -1625,6 +1702,18 @@ namespace FairyGUI
 				displayObject.grayed = _grayed;
 		}
 
+		virtual protected void HandleAlphaChanged()
+		{
+			if (displayObject != null)
+				displayObject.alpha = _alpha;
+		}
+
+		virtual internal protected void HandleVisibleChanged()
+		{
+			if (displayObject != null)
+				displayObject.visible = internalVisible2;
+		}
+
 		virtual public void ConstructFromResource()
 		{
 		}
@@ -1706,6 +1795,10 @@ namespace FairyGUI
 			str = xml.GetAttribute("tooltips");
 			if (str != null)
 				this.tooltips = str;
+
+			str = xml.GetAttribute("customData");
+			if (str != null)
+				this.data = str;
 		}
 
 		static Dictionary<string, int> GearXMLKeys = new Dictionary<string, int>()
@@ -1741,6 +1834,7 @@ namespace FairyGUI
 
 		#region Drag support
 		Vector2 _dragTouchStartPos;
+		bool _dragTesting;
 
 		static Vector2 sGlobalDragStart = new Vector2();
 		static Rect sGlobalRect = new Rect();
@@ -1772,8 +1866,12 @@ namespace FairyGUI
 				tmp.onDragEnd.Call();
 			}
 
+			onTouchMove.Add(__touchMove);
+			onTouchEnd.Add(__touchEnd);
+
 			sGlobalDragStart = Stage.inst.GetTouchPosition(touchId);
 			sGlobalRect = this.LocalToGlobal(new Rect(0, 0, this.width, this.height));
+			_dragTesting = false;
 
 			draggingObject = this;
 			Stage.inst.AddTouchMonitor(touchId, this);
@@ -1783,7 +1881,7 @@ namespace FairyGUI
 		{
 			if (draggingObject == this)
 			{
-				Stage.inst.RemoveTouchMonitor(this);
+				_dragTesting = false;
 				draggingObject = null;
 			}
 		}
@@ -1792,6 +1890,7 @@ namespace FairyGUI
 		{
 			InputEvent evt = context.inputEvent;
 			_dragTouchStartPos = evt.position;
+			_dragTesting = true;
 			context.CaptureTouch();
 		}
 
@@ -1799,7 +1898,7 @@ namespace FairyGUI
 		{
 			InputEvent evt = context.inputEvent;
 
-			if (draggingObject != this)
+			if (_dragTesting && draggingObject != this)
 			{
 				int sensitivity;
 				if (Stage.touchScreen)
@@ -1810,6 +1909,7 @@ namespace FairyGUI
 					&& Mathf.Abs(_dragTouchStartPos.y - evt.y) < sensitivity)
 					return;
 
+				_dragTesting = false;
 				if (!onDragStart.Call(evt.touchId))
 					DragBegin(evt.touchId);
 			}
