@@ -109,7 +109,7 @@ namespace FairyGUI
 			if (_bridge == null)
 				_bridge = this.owner.GetEventBridge(_type);
 
-            if (callback == _bridge._callback0)
+            if (callback == _bridge._callback1)
             {
                 return;
             }
@@ -128,7 +128,7 @@ namespace FairyGUI
             
 			if (_bridge == null)
 				_bridge = this.owner.GetEventBridge(_type);
-            if (callback == _bridge._callback1)
+            if (callback == _bridge._callback0)
             {
                 return;
             }
