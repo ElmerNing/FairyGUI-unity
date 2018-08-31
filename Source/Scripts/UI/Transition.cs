@@ -38,8 +38,25 @@ namespace FairyGUI
 		bool _paused;
 		float _ownerBaseX;
 		float _ownerBaseY;
-		PlayCompleteCallback _onComplete;
-		int _options;
+
+        PlayCompleteCallback _______onComplete;
+        PlayCompleteCallback _onComplete
+        {
+            get
+            {
+                return _______onComplete;
+            }
+            set
+            {
+                if (_______onComplete != value)
+                {
+                    LuaFramework.LuaDelegateManager.isntance.ClearDelegate(_______onComplete);
+                    _______onComplete = value;
+                }
+
+            }
+        }
+        int _options;
 		bool _reversed;
 		float _totalDuration;
 		bool _autoPlay;

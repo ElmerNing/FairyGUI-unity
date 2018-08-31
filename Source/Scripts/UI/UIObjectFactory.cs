@@ -14,6 +14,7 @@ namespace FairyGUI
 
 		static Dictionary<string, GComponentCreator> packageItemExtensions = new Dictionary<string, GComponentCreator>();
 		static GLoaderCreator loaderCreator;
+		static Func<ObjectType, GComponent> gcomponentCreator;
 
 		/// <summary>
 		/// 
@@ -60,7 +61,15 @@ namespace FairyGUI
 			loaderCreator = creator;
 		}
 
-		internal static void ResolvePackageItemExtension(PackageItem pi)
+       /// <summary>
+        /// 
+        /// </summary>
+        public static void SetComponentExtension(Func<ObjectType, GComponent> creator)
+        {
+            gcomponentCreator = creator;
+        }
+
+        internal static void ResolvePackageItemExtension(PackageItem pi)
 		{
 			if (!packageItemExtensions.TryGetValue(UIPackage.URL_PREFIX + pi.owner.id + pi.id, out pi.extensionCreator)
 				&& !packageItemExtensions.TryGetValue(UIPackage.URL_PREFIX + pi.owner.name + "/" + pi.name, out pi.extensionCreator))
@@ -107,6 +116,10 @@ namespace FairyGUI
 					return new GMovieClip();
 
 				case ObjectType.Component:
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
 					return new GComponent();
 
 				case ObjectType.Text:
@@ -134,22 +147,46 @@ namespace FairyGUI
 						return new GLoader();
 
 				case ObjectType.Button:
-					return new GButton();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GButton();
 
 				case ObjectType.Label:
-					return new GLabel();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GLabel();
 
 				case ObjectType.ProgressBar:
-					return new GProgressBar();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GProgressBar();
 
 				case ObjectType.Slider:
-					return new GSlider();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GSlider();
 
 				case ObjectType.ScrollBar:
-					return new GScrollBar();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GScrollBar();
 
 				case ObjectType.ComboBox:
-					return new GComboBox();
+                    if (gcomponentCreator != null)
+                    {
+                        return gcomponentCreator(type);
+                    }
+                    return new GComboBox();
 
 				default:
 					return null;
