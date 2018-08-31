@@ -164,10 +164,7 @@ namespace FairyGUI
 #endif
 			meshRenderer.receiveShadows = false;
 			mesh = new Mesh();
-            if (Debug.isDebugBuild)
-            {
-                mesh.name = "fairy";
-            }
+			mesh.name = gameObject.name;
 			mesh.MarkDynamic();
 
 			meshFilter.hideFlags = DisplayOptions.hideFlags;
@@ -265,7 +262,7 @@ namespace FairyGUI
 				_manager.Release();
 
 			if (_texture != null)
-				_manager = MaterialManager.GetInstance(_texture, _shader, _materialKeywords);
+				_manager = _texture.GetMaterialManager(_shader, _materialKeywords);
 			else
 				_manager = null;
 		}
@@ -306,9 +303,9 @@ namespace FairyGUI
 			if (mesh != null)
 			{
 				if (Application.isPlaying)
-					Mesh.Destroy(mesh);
+					Object.Destroy(mesh);
 				else
-					Mesh.DestroyImmediate(mesh);
+					Object.DestroyImmediate(mesh);
 				mesh = null;
 			}
 			if (_manager != null)
@@ -338,11 +335,8 @@ namespace FairyGUI
 				{
 					nm = _manager.GetMaterial(this, context);
 					_material = nm.material;
-					if ((object)_material != (object)meshRenderer.sharedMaterial && (object)_material.mainTexture != null)
+					if ((object)_material != (object)meshRenderer.sharedMaterial)
 						meshRenderer.sharedMaterial = _material;
-
-					if (nm.combined)
-						_material.SetTexture("_AlphaTex", _manager.texture.alphaTexture.nativeTexture);
 				}
 				else
 				{

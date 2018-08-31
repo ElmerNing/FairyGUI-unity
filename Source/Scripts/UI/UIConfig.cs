@@ -42,7 +42,7 @@ namespace FairyGUI
 		/// <summary>
 		/// Default button click sound.
 		/// </summary>
-		public static AudioClip buttonSound;
+		public static NAudioClip buttonSound;
 
 		/// <summary>
 		/// Default button click sound volume.
@@ -244,7 +244,7 @@ namespace FairyGUI
 				{
 					case ConfigKey.ButtonSound:
 						if (Application.isPlaying)
-							UIConfig.buttonSound = UIPackage.GetItemAssetByURL(value.s) as AudioClip;
+							UIConfig.buttonSound = UIPackage.GetItemAssetByURL(value.s) as NAudioClip;
 						break;
 
 					case ConfigKey.ButtonSoundVolumeScale:
@@ -361,29 +361,11 @@ namespace FairyGUI
 			//nothing yet
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="url"></param>
-		/// <returns></returns>
-		public delegate AudioClip SoundLoader(string url);
-		static SoundLoader soundLoader = null;
+		public delegate NAudioClip SoundLoader(string url);
 
 		/// <summary>
 		/// 
 		/// </summary>
-		/// <param name="loader"></param>
-		public static void SetSoundLoader(SoundLoader loader)
-		{
-			soundLoader = loader;
-		}
-
-		internal static AudioClip LoadSound(string url)
-		{
-			if (soundLoader == null || url.StartsWith(UIPackage.URL_PREFIX))
-				return UIPackage.GetItemAssetByURL(url) as AudioClip;
-			else
-				return soundLoader(url);
-		}
+		public static SoundLoader soundLoader = null;
 	}
 }
