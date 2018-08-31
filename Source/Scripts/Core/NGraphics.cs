@@ -164,6 +164,10 @@ namespace FairyGUI
 #endif
 			meshRenderer.receiveShadows = false;
 			mesh = new Mesh();
+            if (Debug.isDebugBuild)
+            {
+                mesh.name = "fairy";
+            }
 			mesh.MarkDynamic();
 
 			meshFilter.hideFlags = DisplayOptions.hideFlags;
