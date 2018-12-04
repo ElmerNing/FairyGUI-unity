@@ -163,7 +163,8 @@ namespace FairyGUI
 		meshRenderer.castShadows = false;
 #endif
 			meshRenderer.receiveShadows = false;
-			mesh = new Mesh();
+            meshRenderer.allowOcclusionWhenDynamic = false;
+            mesh = new Mesh();
 			mesh.name = gameObject.name;
 			mesh.MarkDynamic();
 

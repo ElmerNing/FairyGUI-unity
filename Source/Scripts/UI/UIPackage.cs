@@ -52,7 +52,7 @@ namespace FairyGUI
 		bool _fromBundle;
 		LoadResource _loadFunc;
 
-		class AtlasSprite
+		public class AtlasSprite
 		{
 			public PackageItem atlas;
 			public Rect rect = new Rect();
@@ -898,6 +898,14 @@ namespace FairyGUI
 			AsyncCreationHelper.CreateObject(pi, callback);
 		}
 
+        class Ref
+        {
+            public WeakReference obj;
+            public string name;
+        }
+
+        static Dictionary<int, Ref> fairyDict = new Dictionary<int, Ref>();
+
 		GObject CreateObject(PackageItem item, System.Type userClass)
 		{
 			Stats.LatestObjectCreation = 0;
@@ -923,8 +931,44 @@ namespace FairyGUI
 			g.packageItem = item;
 			g.ConstructFromResource();
 			_constructing--;
-			return g;
+
+            //fairyDict.Add(g.GetHashCode(), new Ref
+            //{
+                //obj = new WeakReference(g),
+                //name = item.name,
+
+            //});
+
+            return g;
 		}
+
+        public static void Dump()
+        {
+            Debug.Log("开始");
+            List<int> tl = new List<int>();
+            foreach (var item in fairyDict)
+            {
+                var r = item.Value;
+                var k = item.Key;
+                if (r.obj.IsAlive)
+                {
+                    var g = r.obj.Target as GObject;
+                    if (g.isDisposed)
+                    {
+                        Debug.Log(r.name);
+                    }
+                }
+                else
+                {
+                    tl.Add(k);
+                }
+            }
+            Debug.Log("结束");
+            foreach (var item in tl)
+            {
+                fairyDict.Remove(item);
+            }
+        }
 
 
 		/// <summary>

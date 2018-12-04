@@ -81,8 +81,9 @@ namespace FairyGUI
 				Controller c = _controllers[i];
 				c.Dispose();
 			}
+            _controllers = null;
 
-			if (scrollPane != null)
+            if (scrollPane != null)
 				scrollPane.Dispose();
 
 			base.Dispose(); //Dispose native tree first, avoid DisplayObject.RemoveFromParent call

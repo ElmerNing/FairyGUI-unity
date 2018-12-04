@@ -1,3 +1,7 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
 Shader "FairyGUI/Image"
 {
 	Properties
@@ -94,15 +98,14 @@ Shader "FairyGUI/Image"
 				#ifdef COLOR_FILTER
 				float4x4 _ColorMatrix;
 				float4 _ColorOffset;
-				float _ColorOption = 0;
 				#endif
 
 				v2f vert (appdata_t v)
 				{
 					v2f o;
-					o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+					o.vertex = UnityObjectToClipPos(v.vertex);
 					o.texcoord = v.texcoord;
-					#if !defined(UNITY_COLORSPACE_GAMMA) && (UNITY_VERSION >= 540)
+					#if !defined(UNITY_COLORSPACE_GAMMA) && (UNITY_VERSION >= 500)
 					o.color.rgb = GammaToLinearSpace(v.color.rgb);
 					o.color.a = v.color.a;
 					#else
@@ -110,11 +113,11 @@ Shader "FairyGUI/Image"
 					#endif
 
 					#ifdef CLIPPED
-					o.clipPos = mul(_Object2World, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
+					o.clipPos = mul(unity_ObjectToWorld, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
 					#endif
 
 					#ifdef SOFT_CLIPPED
-					o.clipPos = mul(_Object2World, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
+					o.clipPos = mul(unity_ObjectToWorld, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
 					#endif
 
 					return o;
@@ -152,17 +155,12 @@ Shader "FairyGUI/Image"
 					#endif
 
 					#ifdef COLOR_FILTER
-					if (_ColorOption == 0)
-					{
-						fixed4 col2 = col;
-						col2.r = dot(col, _ColorMatrix[0]) + _ColorOffset.x;
-						col2.g = dot(col, _ColorMatrix[1]) + _ColorOffset.y;
-						col2.b = dot(col, _ColorMatrix[2]) + _ColorOffset.z;
-						col2.a = dot(col, _ColorMatrix[3]) + _ColorOffset.w;
-						col = col2;
-					}
-					else //premultiply alpha
-						col.rgb *= col.a;
+					fixed4 col2 = col;
+					col2.r = dot(col, _ColorMatrix[0])+_ColorOffset.x;
+					col2.g = dot(col, _ColorMatrix[1])+_ColorOffset.y;
+					col2.b = dot(col, _ColorMatrix[2])+_ColorOffset.z;
+					col2.a = dot(col, _ColorMatrix[3])+_ColorOffset.w;
+					col = col2;
 					#endif
 
 					#ifdef ALPHA_MASK

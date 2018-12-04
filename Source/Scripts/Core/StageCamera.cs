@@ -165,7 +165,9 @@ namespace FairyGUI
 			camera.allowHDR = false;
 			camera.allowMSAA = false;
 #endif
-			cameraObject.AddComponent<StageCamera>();
+
+            camera.useOcclusionCulling = false;
+            cameraObject.AddComponent<StageCamera>();
 
 			return camera;
 		}

@@ -1,3 +1,7 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+// Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
+
 Shader "FairyGUI/Text Brighter"
 {
 	Properties
@@ -90,8 +94,8 @@ Shader "FairyGUI/Text Brighter"
 				v2f vert (appdata_t v)
 				{
 					v2f o;
-					o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
-					#if !defined(UNITY_COLORSPACE_GAMMA) && (UNITY_VERSION >= 540)
+					o.vertex = UnityObjectToClipPos(v.vertex);
+					#if !defined(UNITY_COLORSPACE_GAMMA) && (UNITY_VERSION >= 500)
 					o.color.rgb = GammaToLinearSpace(v.color.rgb);
 					o.color.a = v.color.a;
 					#else
@@ -122,11 +126,11 @@ Shader "FairyGUI/Text Brighter"
 					o.texcoord = texcoord;
 
 					#ifdef CLIPPED
-					o.clipPos = mul(_Object2World, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
+					o.clipPos = mul(unity_ObjectToWorld, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
 					#endif
 
 					#ifdef SOFT_CLIPPED
-					o.clipPos = mul(_Object2World, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
+					o.clipPos = mul(unity_ObjectToWorld, v.vertex).xy * _ClipBox.zw + _ClipBox.xy;
 					#endif
 
 					return o;
@@ -138,8 +142,13 @@ Shader "FairyGUI/Text Brighter"
 					col.a *= tex2D(_MainTex, i.texcoord).a * i.flags.x;
 
 					#ifdef GRAYED
-					fixed grey = dot(col.rgb, fixed3(0.299, 0.587, 0.114));
-					col.rgb = fixed3(grey, grey, grey);
+					if(i.flags.y==1)
+					{
+						fixed grey = dot(col.rgb, fixed3(0.299, 0.587, 0.114));
+						col.rgb = fixed3(grey, grey, grey);  
+					}
+					else
+						col.rgb = fixed3(0.8, 0.8, 0.8);
 					#endif
 
 					#ifdef SOFT_CLIPPED
