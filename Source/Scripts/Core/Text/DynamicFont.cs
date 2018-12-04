@@ -123,6 +123,8 @@ namespace FairyGUI
 				else
 					_size = Mathf.FloorToInt((float)format.size * fontSizeScale);
 			}
+			if (_size == 0)
+				_size = 1;
 
 			if (format.bold && !customBold)
 			{
@@ -258,6 +260,11 @@ namespace FairyGUI
 			}
 			else
 				return false;
+		}
+
+		override public bool HasCharacter(char ch)
+		{
+			return _font.HasCharacter(ch);
 		}
 
 #if (UNITY_5 || UNITY_5_3_OR_NEWER || UNITY_4_7)

@@ -47,6 +47,7 @@ namespace FairyGUI
 		List<PackageItem> _items;
 		Dictionary<string, PackageItem> _itemsById;
 		Dictionary<string, PackageItem> _itemsByName;
+		Dictionary<string, string>[] _dependencies;
 		AssetBundle _resBundle;
 		string _customId;
 		bool _fromBundle;
@@ -560,6 +561,14 @@ namespace FairyGUI
 			get { return _resBundle; }
 		}
 
+		/// <summary>
+		/// 获得本包依赖的包的id列表
+		/// </summary>
+		public Dictionary<string, string>[] dependencies
+		{
+			get { return _dependencies; }
+		}
+
 		bool LoadPackage(ByteBuffer buffer, string packageSource, string assetNamePrefix)
 		{
 			if (buffer.ReadUint() != 0x46475549)
@@ -593,6 +602,17 @@ namespace FairyGUI
 			for (int i = 0; i < cnt; i++)
 				stringTable[i] = buffer.ReadString();
 			buffer.stringTable = stringTable;
+
+			if (buffer.Seek(indexTablePos, 5))
+			{
+				cnt = buffer.ReadInt();
+				for (int i = 0; i < cnt; i++)
+				{
+					int index = buffer.ReadUshort();
+					int len = buffer.ReadInt();
+					stringTable[index] = buffer.ReadString(len);
+				}
+			}
 
 			buffer.Seek(indexTablePos, 1);
 
@@ -734,6 +754,17 @@ namespace FairyGUI
 			if (!Application.isPlaying)
 				_items.Sort(ComparePackageItem);
 
+			buffer.Seek(indexTablePos, 0);
+			cnt = buffer.ReadShort();
+			_dependencies = new Dictionary<string, string>[cnt];
+			for (int i = 0; i < cnt; i++)
+			{
+				Dictionary<string, string> kv = new Dictionary<string, string>();
+				kv.Add("id", buffer.ReadS());
+				kv.Add("name", buffer.ReadS());
+				_dependencies[i] = kv;
+			}
+
 			return true;
 		}
 
@@ -829,7 +860,7 @@ namespace FairyGUI
 				{
 					if (pi.texture != null)
 					{
-						pi.texture.Unload();
+						pi.texture.Dispose();
 						pi.texture = null;
 					}
 				}
@@ -1265,7 +1296,7 @@ namespace FairyGUI
 			font.canTint = buffer.ReadBool();
 			font.resizable = buffer.ReadBool();
 			font.hasChannel = buffer.ReadBool();
-			font.size = buffer.ReadInt();
+			int fontSize = buffer.ReadInt();
 			int xadvance = buffer.ReadInt();
 			int lineHeight = buffer.ReadInt();
 
@@ -1309,7 +1340,28 @@ namespace FairyGUI
 				else if (bg.channel == 3)
 					bg.channel = 1;
 
-				if (!ttf)
+				if (ttf)
+				{
+					if (mainSprite.rotated)
+					{
+						bg.uv[0] = new Vector2((float)(by + bg.height + mainSprite.rect.x) * texScaleX,
+							1 - (float)(mainSprite.rect.yMax - bx) * texScaleY);
+						bg.uv[1] = new Vector2(bg.uv[0].x - (float)bg.height * texScaleX, bg.uv[0].y);
+						bg.uv[2] = new Vector2(bg.uv[1].x, bg.uv[0].y + (float)bg.width * texScaleY);
+						bg.uv[3] = new Vector2(bg.uv[0].x, bg.uv[2].y);
+					}
+					else
+					{
+						bg.uv[0] = new Vector2((float)(bx + mainSprite.rect.x) * texScaleX,
+							1 - (float)(by + bg.height + mainSprite.rect.y) * texScaleY);
+						bg.uv[1] = new Vector2(bg.uv[0].x, bg.uv[0].y + (float)bg.height * texScaleY);
+						bg.uv[2] = new Vector2(bg.uv[0].x + (float)bg.width * texScaleX, bg.uv[1].y);
+						bg.uv[3] = new Vector2(bg.uv[2].x, bg.uv[0].y);
+					}
+
+					bg.lineHeight = lineHeight;
+				}
+				else
 				{
 					PackageItem charImg;
 					if (_itemsById.TryGetValue(img, out charImg))
@@ -1328,31 +1380,10 @@ namespace FairyGUI
 						if (mainTexture == null)
 							mainTexture = charImg.texture.root;
 					}
-				}
-				else
-				{
-					if (mainSprite.rotated)
-					{
-						bg.uv[0] = new Vector2((float)(by + bg.height + mainSprite.rect.x) * texScaleX,
-							1 - (float)(mainSprite.rect.yMax - bx) * texScaleY);
-						bg.uv[1] = new Vector2(bg.uv[0].x - (float)bg.height * texScaleX, bg.uv[0].y);
-						bg.uv[2] = new Vector2(bg.uv[1].x, bg.uv[0].y + (float)bg.width * texScaleY);
-						bg.uv[3] = new Vector2(bg.uv[0].x, bg.uv[2].y);
-					}
-					else
-					{
-						bg.uv[0] = new Vector2((float)(bx + mainSprite.rect.x) * texScaleX,
-							1 - (float)(by + bg.height + mainSprite.rect.y) * texScaleY);
-						bg.uv[1] = new Vector2(bg.uv[0].x, bg.uv[0].y + (float)bg.height * texScaleY);
-						bg.uv[2] = new Vector2(bg.uv[0].x + (float)bg.width * texScaleX, bg.uv[1].y);
-						bg.uv[3] = new Vector2(bg.uv[2].x, bg.uv[0].y);
-					}
-				}
 
-				if (ttf)
-					bg.lineHeight = lineHeight;
-				else
-				{
+					if (fontSize == 0)
+						fontSize = bg.height;
+
 					if (bg.advance == 0)
 					{
 						if (xadvance == 0)
@@ -1369,6 +1400,7 @@ namespace FairyGUI
 				buffer.position = nextPos;
 			}
 
+			font.size = fontSize;
 			font.mainTexture = mainTexture;
 			if (!font.hasChannel)
 				font.shader = ShaderConfig.imageShader;

@@ -1462,11 +1462,10 @@ namespace FairyGUI
 				//fast
 				pt.x /= GRoot.contentScaleFactor;
 				pt.y /= GRoot.contentScaleFactor;
+				return pt;
 			}
 			else
 				return r.GlobalToLocal(pt);
-
-			return pt;
 		}
 
 		/// <summary>
@@ -1525,7 +1524,7 @@ namespace FairyGUI
 				pt.x += _width * _pivotX;
 				pt.y += _height * _pivotY;
 			}
-			return this.displayObject.TransformPoint(pt, targetSpace.displayObject);
+			return this.displayObject.TransformPoint(pt, targetSpace != null ? targetSpace.displayObject : Stage.inst);
 		}
 
 		/// <summary>
@@ -1541,11 +1540,25 @@ namespace FairyGUI
 				rect.x += _width * _pivotX;
 				rect.y += _height * _pivotY;
 			}
-			return this.displayObject.TransformRect(rect, targetSpace.displayObject);
+			return this.displayObject.TransformRect(rect, targetSpace != null ? targetSpace.displayObject : Stage.inst);
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		public bool isDisposed
+		{
+			get { return _disposed; }
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
 		virtual public void Dispose()
 		{
+			if (_disposed)
+				return;
+
 			_disposed = true;
 
 			RemoveFromParent();
@@ -1561,76 +1574,121 @@ namespace FairyGUI
             isDisposed = true;
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GImage asImage
 		{
 			get { return this as GImage; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GComponent asCom
 		{
 			get { return this as GComponent; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GButton asButton
 		{
 			get { return this as GButton; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GLabel asLabel
 		{
 			get { return this as GLabel; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GProgressBar asProgress
 		{
 			get { return this as GProgressBar; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GSlider asSlider
 		{
 			get { return this as GSlider; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GComboBox asComboBox
 		{
 			get { return this as GComboBox; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GTextField asTextField
 		{
 			get { return this as GTextField; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GRichTextField asRichTextField
 		{
 			get { return this as GRichTextField; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GTextInput asTextInput
 		{
 			get { return this as GTextInput; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GLoader asLoader
 		{
 			get { return this as GLoader; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GList asList
 		{
 			get { return this as GList; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GGraph asGraph
 		{
 			get { return this as GGraph; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GGroup asGroup
 		{
 			get { return this as GGroup; }
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
 		public GMovieClip asMovieClip
 		{
 			get { return this as GMovieClip; }

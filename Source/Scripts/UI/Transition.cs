@@ -518,6 +518,11 @@ namespace FairyGUI
 							tvalue.f4 = Convert.ToSingle(aParams[3]);
 						}
 						break;
+
+					case TransitionActionType.Text:
+					case TransitionActionType.Icon:
+						((TValue_Text)value).text = (string)aParams[0];
+						break;
 				}
 			}
 		}
@@ -1020,6 +1025,13 @@ namespace FairyGUI
 						if (!startValue.b2)
 							startValue.f2 = item.target.y;
 					}
+					else
+					{
+						if (!startValue.b1)
+							startValue.f1 = item.target.x - _ownerBaseX;
+						if (!startValue.b2)
+							startValue.f2 = item.target.y - _ownerBaseY;
+					}
 				}
 				else
 				{
@@ -1078,10 +1090,6 @@ namespace FairyGUI
 			TransitionItem item = (TransitionItem)tweener.target;
 			item.tweener = null;
 			_totalTasks--;
-
-			if (item.type == TransitionActionType.XY || item.type == TransitionActionType.Size
-				|| item.type == TransitionActionType.Scale || item.type == TransitionActionType.Shake)
-				_owner.InvalidateBatchingState(true);
 
 			if (tweener.allCompleted) //当整体播放结束时间在这个tween的中间时不应该调用结尾钩子
 				CallHook(item, true);
@@ -1309,6 +1317,14 @@ namespace FairyGUI
 						cf.AdjustHue(value.f4);
 					}
 					break;
+
+				case TransitionActionType.Text:
+					item.target.text = ((TValue_Text)item.value).text;
+					break;
+
+				case TransitionActionType.Icon:
+					item.target.icon = ((TValue_Text)item.value).text;
+					break;
 			}
 
 			item.target._gearLocked = false;
@@ -1442,6 +1458,11 @@ namespace FairyGUI
 						tvalue.f4 = buffer.ReadFloat();
 					}
 					break;
+
+				case TransitionActionType.Text:
+				case TransitionActionType.Icon:
+					((TValue_Text)value).text = buffer.ReadS();
+					break;
 			}
 		}
 	}
@@ -1497,6 +1518,11 @@ namespace FairyGUI
 
 				case TransitionActionType.Visible:
 					value = new TValue_Visible();
+					break;
+
+				case TransitionActionType.Text:
+				case TransitionActionType.Icon:
+					value = new TValue_Text();
 					break;
 			}
 		}
@@ -1557,6 +1583,11 @@ namespace FairyGUI
 		public float duration;
 		public Vector2 lastOffset;
 		public Vector2 offset;
+	}
+
+	class TValue_Text
+	{
+		public string text;
 	}
 
 	class TValue
