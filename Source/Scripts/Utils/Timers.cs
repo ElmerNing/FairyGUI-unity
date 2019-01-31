@@ -209,7 +209,7 @@ namespace FairyGUI
 							catch (System.Exception e)
 							{
 								i.deleted = true;
-								Debug.LogWarning("FairyGUI: timer(internal=" + i.interval + ", repeat=" + i.repeat + ") callback error > " + e.Message);
+								Debug.LogError("FairyGUI: timer(internal=" + i.interval + ", repeat=" + i.repeat + ") callback error > " + e.Message);
 							}
 						}
 						else

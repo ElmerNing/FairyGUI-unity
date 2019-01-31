@@ -177,11 +177,6 @@ namespace FairyGUI
 		/// </summary>
 		public PackageItem packageItem;
 
-		/// <summary>
-		/// 当前是否释放
-		/// </summary>
-		public bool isDisposed = false;
-
 		float _x;
 		float _y;
 		float _z;
@@ -1571,7 +1566,6 @@ namespace FairyGUI
 				displayObject.Dispose();
 			}
 			data = null;
-            isDisposed = true;
 		}
 
 		/// <summary>

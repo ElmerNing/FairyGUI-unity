@@ -154,7 +154,7 @@ namespace FairyGUI
 			camera.clearFlags = CameraClearFlags.Depth;
 			camera.orthographic = true;
 			camera.orthographicSize = DefaultCameraSize;
-			camera.nearClipPlane = -30;
+			camera.nearClipPlane = -100000;
 			camera.farClipPlane = 30;
 
 #if UNITY_5_4_OR_NEWER
