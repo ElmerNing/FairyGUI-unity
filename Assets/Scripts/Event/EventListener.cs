@@ -175,12 +175,43 @@ namespace FairyGUI
 			if (func != null)
 				Add(func, self);
 		}
-#endif
 
-		/// <summary>
+
+        /// <summary>
 		/// 
 		/// </summary>
-		public bool isEmpty
+		/// <param name="func"></param>
+		public void Add(LuaFunction func)
+        {
+            _bridge.Add(func, (LuaTable)null);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="func"></param>
+        /// <param name="self"></param>
+        public void Set(LuaFunction func)
+        {
+            _bridge.Clear();
+            if (func != null)
+                Add(func);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="func"></param>
+        public void Remove(LuaFunction func)
+        {
+            _bridge.Remove(func, (LuaTable)null);
+        }
+#endif
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool isEmpty
 		{
 			get
 			{

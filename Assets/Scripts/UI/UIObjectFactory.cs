@@ -80,7 +80,7 @@ namespace FairyGUI
 			loaderCreator = creator;
 		}
 
-		internal static void ResolvePackageItemExtension(PackageItem pi)
+        internal static void ResolvePackageItemExtension(PackageItem pi)
 		{
 			if (!packageItemExtensions.TryGetValue(UIPackage.URL_PREFIX + pi.owner.id + pi.id, out pi.extensionCreator)
 				&& !packageItemExtensions.TryGetValue(UIPackage.URL_PREFIX + pi.owner.name + "/" + pi.name, out pi.extensionCreator))
@@ -106,7 +106,7 @@ namespace FairyGUI
 				return pi.extensionCreator();
 			}
 			else
-				return NewObject(pi.objectType);
+				return NewObject2(pi.objectType, pi.name);
 		}
 
 		/// <summary>
@@ -127,7 +127,7 @@ namespace FairyGUI
 					return new GMovieClip();
 
 				case ObjectType.Component:
-					return new GComponent();
+                    return new GComponent();
 
 				case ObjectType.Text:
 					return new GTextField();
@@ -175,5 +175,19 @@ namespace FairyGUI
 					return null;
 			}
 		}
-	}
+
+        public static GObject NewObject2(ObjectType type, string name)
+        {
+            GObject ret = NewObject(type);
+
+            GComponent com = ret as GComponent;
+            if (com != null && LuaUIHelper.gcomponentCreator != null)
+            {
+                LuaUIHelper.gcomponentCreator(com, name);
+            }
+            
+            return ret;
+        }
+
+    }
 }

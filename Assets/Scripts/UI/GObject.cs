@@ -2086,6 +2086,16 @@ namespace FairyGUI
 		{
 			return GTween.To(_rotation, endValue, duration).SetTarget(this, TweenPropType.Rotation);
 		}
-		#endregion
-	}
+        #endregion
+
+
+        override public bool Equals(System.Object obj)
+        {
+            if (obj == null)
+            {
+                return this.isDisposed;
+            }
+            return this == obj;
+        }
+    }
 }

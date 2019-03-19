@@ -15,7 +15,7 @@ namespace FairyGUI
 		/// 4.x: Put the xxx.ttf into /Resources or /Resources/Fonts, and set defaultFont="xxx".
 		/// 5.x: set defaultFont to system font name(or names joint with comma). e.g. defaultFont="Microsoft YaHei, SimHei"
 		/// </summary>
-		public static string defaultFont = "";
+		public static string defaultFont = "font";
 
 		[Obsolete("No use anymore")]
 		public static bool renderingTextBrighterOnDesktop = true;

@@ -53,7 +53,7 @@ namespace FairyGUI
 		bool _fromBundle;
 		LoadResource _loadFunc;
 
-		class AtlasSprite
+		public class AtlasSprite
 		{
 			public PackageItem atlas;
 			public Rect rect = new Rect();

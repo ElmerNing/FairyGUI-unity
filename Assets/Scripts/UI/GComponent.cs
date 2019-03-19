@@ -66,6 +66,10 @@ namespace FairyGUI
 
 		override public void Dispose()
 		{
+
+            CallLua("OnDispose");
+
+
 			int cnt = _transitions.Count;
 			for (int i = 0; i < cnt; ++i)
 			{
@@ -1484,7 +1488,7 @@ namespace FairyGUI
 			ConstructFromXML(null);
 
 #if FAIRYGUI_TOLUA
-			CallLua("ctor");
+			CallLua("OnCtor");
 #endif
 		}
 
