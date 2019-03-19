@@ -21,12 +21,17 @@ namespace FairyGUI
 		int _lastFontSize;
 		int _size;
 		FontStyle _style;
+		bool _bold;
 
 		static CharacterInfo sTempChar;
 
 		internal static bool textRebuildFlag;
 
-		public DynamicFont(string name)
+		public DynamicFont(string name) : this(name, null)
+		{
+		}
+
+		public DynamicFont(string name, Font font)
 		{
 			this.name = name;
 			this.canTint = true;
@@ -40,7 +45,40 @@ namespace FairyGUI
 
 			_renderInfo = new Dictionary<int, RenderInfo>();
 
-			LoadFont();
+			if (font == null)
+				LoadFont();
+			else
+				_font = font;
+
+			this.nativeFont = _font;
+		}
+
+		public Font nativeFont
+		{
+			get { return _font; }
+			set
+			{
+				if (_font != null)
+				{
+#if (UNITY_4_7 || UNITY_5 || UNITY_5_3_OR_NEWER)
+					Font.textureRebuilt -= textureRebuildCallback;
+#else
+					_font.textureRebuildCallback -= textureRebuildCallback;
+#endif
+				}
+				_font = value;
+#if (UNITY_4_7 || UNITY_5 || UNITY_5_3_OR_NEWER)
+				Font.textureRebuilt += textureRebuildCallback;
+#else
+				_font.textureRebuildCallback += textureRebuildCallback;
+#endif
+				if (mainTexture != null)
+					mainTexture.Dispose();
+				mainTexture = new NTexture(_font.material.mainTexture);
+				mainTexture.destroyMethod = DestroyMethod.None;
+
+				_renderInfo.Clear();
+			}
 		}
 
 		void LoadFont()
@@ -90,15 +128,6 @@ namespace FairyGUI
 				_font.material.hideFlags = DisplayOptions.hideFlags;
 				_font.material.mainTexture.hideFlags = DisplayOptions.hideFlags;
 			}
-
-#if (UNITY_4_7 || UNITY_5 || UNITY_5_3_OR_NEWER)
-			Font.textureRebuilt += textureRebuildCallback;
-#else
-			_font.textureRebuildCallback += textureRebuildCallback;
-#endif
-
-			mainTexture = new NTexture(_font.material.mainTexture);
-			mainTexture.destroyMethod = DestroyMethod.None;
 		}
 
 		override public void SetFormat(TextFormat format, float fontSizeScale)
@@ -117,7 +146,8 @@ namespace FairyGUI
 			if (_size == 0)
 				_size = 1;
 
-			if (format.bold && !customBold)
+			_bold = format.bold;
+			if (_bold && !customBold)
 			{
 				if (format.italic)
 				{
@@ -161,7 +191,7 @@ namespace FairyGUI
 				width = Mathf.CeilToInt(sTempChar.width);
 #endif
 				height = ri.height;
-				if (customBold)
+				if (_bold && customBold)
 					width++;
 
 				if (keepCrisp)
@@ -207,7 +237,7 @@ namespace FairyGUI
 
 				glyph.width = sTempChar.advance;
 				glyph.height = ri.height;
-				if (customBold)
+				if (_bold && customBold)
 					glyph.width++;
 #else
 				glyph.vertMin.x = sTempChar.vert.xMin;
@@ -234,7 +264,7 @@ namespace FairyGUI
 
 				glyph.width = Mathf.CeilToInt(sTempChar.width);
 				glyph.height = sTempChar.size;
-				if (customBold)
+				if (_bold && customBold)
 					glyph.width++;
 #endif
 				if (keepCrisp)

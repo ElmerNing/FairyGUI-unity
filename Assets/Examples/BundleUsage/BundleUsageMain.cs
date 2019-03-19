@@ -27,7 +27,7 @@ class BundleUsageMain : MonoBehaviour
 		if (Application.platform != RuntimePlatform.Android)
 			url = "file:///" + url;
 
-#if UNITY_5_4_OR_NEWER
+#if UNITY_2017_2_OR_NEWER
 #if UNITY_2018_1_OR_NEWER
 		UnityWebRequest www = UnityWebRequestAssetBundle.GetAssetBundle(url);
 #else

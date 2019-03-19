@@ -58,7 +58,7 @@ namespace FairyGUI
 		bool _fBatching;
 		List<DisplayObject> _descendants;
 
-		internal bool _disabled;
+		internal bool _isPanel;
 		internal int _panelOrder;
 
 		/// <summary>
@@ -392,9 +392,6 @@ namespace FairyGUI
 				if (_mask != value)
 				{
 					_mask = value;
-					if (_mask != null && _mask.parent != this)
-						AddChild(_mask);
-
 					UpdateBatchingFlags();
 				}
 			}
@@ -474,8 +471,10 @@ namespace FairyGUI
 		/// 
 		/// </summary>
 		/// <param name="stagePoint"></param>
+		/// <param name="forTouch"></param>
+		/// <param name="displayIndex"></param>
 		/// <returns></returns>
-		public DisplayObject HitTest(Vector2 stagePoint, bool forTouch)
+		public DisplayObject HitTest(Vector2 stagePoint, bool forTouch, int displayIndex = -1)
 		{
 			if (StageCamera.main == null)
 			{
@@ -485,11 +484,15 @@ namespace FairyGUI
 					return null;
 			}
 
-			HitTestContext.screenPoint = new Vector2(stagePoint.x, Screen.height - stagePoint.y);
+			if (displayIndex != -1)
+				HitTestContext.screenPoint = new Vector2(stagePoint.x, Display.displays[displayIndex].renderingHeight - stagePoint.y);
+			else
+				HitTestContext.screenPoint = new Vector2(stagePoint.x, Screen.height - stagePoint.y);
 			HitTestContext.worldPoint = StageCamera.main.ScreenToWorldPoint(HitTestContext.screenPoint);
 			HitTestContext.direction = Vector3.back;
 			HitTestContext.forTouch = forTouch;
 			HitTestContext.camera = StageCamera.main;
+			HitTestContext.displayIndex = displayIndex;
 
 			DisplayObject ret = HitTest();
 			if (ret != null)
@@ -502,41 +505,59 @@ namespace FairyGUI
 
 		override protected DisplayObject HitTest()
 		{
-			if (_disabled)
+			if (_isPanel && !gameObject.activeInHierarchy)
 				return null;
 
 			if (this.cachedTransform.localScale.x == 0 || this.cachedTransform.localScale.y == 0)
 				return null;
 
+			Camera savedCamera = HitTestContext.camera;
 			Vector3 savedWorldPoint = HitTestContext.worldPoint;
 			Vector3 savedDirection = HitTestContext.direction;
-			Camera savedCamera = HitTestContext.camera;
+			DisplayObject target;
 
-			if (this.renderMode == RenderMode.WorldSpace)
+			if (renderMode != RenderMode.ScreenSpaceOverlay || _isPanel)
 			{
-				HitTestContext.camera = GetRenderCamera();
+				Camera cam = GetRenderCamera();
+#if (UNITY_5 || UNITY_5_3_OR_NEWER)
+				if (HitTestContext.displayIndex != -1 && cam.targetDisplay != HitTestContext.displayIndex)
+					return null;
+#endif
 
-				Vector3 screenPoint = HitTestContext.camera.WorldToScreenPoint(this.cachedTransform.position); //only for query z value
-				screenPoint.x = HitTestContext.screenPoint.x;
-				screenPoint.y = HitTestContext.screenPoint.y;
+				HitTestContext.camera = cam;
+				if (renderMode == RenderMode.WorldSpace)
+				{
+					Vector3 screenPoint = HitTestContext.camera.WorldToScreenPoint(this.cachedTransform.position); //only for query z value
+					screenPoint.x = HitTestContext.screenPoint.x;
+					screenPoint.y = HitTestContext.screenPoint.y;
 
-				//获得本地z轴在世界坐标的方向
-				HitTestContext.worldPoint = HitTestContext.camera.ScreenToWorldPoint(screenPoint);
-				Ray ray = HitTestContext.camera.ScreenPointToRay(screenPoint);
-				HitTestContext.direction = Vector3.zero - ray.direction;
+					//获得本地z轴在世界坐标的方向
+					HitTestContext.worldPoint = HitTestContext.camera.ScreenToWorldPoint(screenPoint);
+					Ray ray = HitTestContext.camera.ScreenPointToRay(screenPoint);
+					HitTestContext.direction = Vector3.zero - ray.direction;
+				}
+				else if (renderMode == RenderMode.ScreenSpaceCamera)
+				{
+					HitTestContext.worldPoint = HitTestContext.camera.ScreenToWorldPoint(HitTestContext.screenPoint);
+				}
 			}
 
-			Vector2 localPoint = WorldToLocal(HitTestContext.worldPoint, HitTestContext.direction);
+			target = HitTest_Container();
 
+			HitTestContext.camera = savedCamera;
+			HitTestContext.worldPoint = savedWorldPoint;
+			HitTestContext.direction = savedDirection;
+
+			return target;
+		}
+
+		DisplayObject HitTest_Container()
+		{
+			Vector2 localPoint = WorldToLocal(HitTestContext.worldPoint, HitTestContext.direction);
 			if (hitArea != null)
 			{
 				if (!hitArea.HitTest(_contentRect, localPoint))
-				{
-					HitTestContext.worldPoint = savedWorldPoint;
-					HitTestContext.direction = savedDirection;
-					HitTestContext.camera = savedCamera;
 					return null;
-				}
 
 				if (hitArea is MeshColliderHitTest)
 					localPoint = ((MeshColliderHitTest)hitArea).lastHit;
@@ -544,24 +565,14 @@ namespace FairyGUI
 			else
 			{
 				if (_clipRect != null && !((Rect)_clipRect).Contains(localPoint))
-				{
-					HitTestContext.worldPoint = savedWorldPoint;
-					HitTestContext.direction = savedDirection;
-					HitTestContext.camera = savedCamera;
 					return null;
-				}
 			}
 
 			if (_mask != null && _mask.parent == this)
 			{
 				DisplayObject tmp = _mask.InternalHitTestMask();
 				if (!reversedMask && tmp == null || reversedMask && tmp != null)
-				{
-					HitTestContext.worldPoint = savedWorldPoint;
-					HitTestContext.direction = savedDirection;
-					HitTestContext.camera = savedCamera;
 					return null;
-				}
 			}
 
 			DisplayObject target = null;
@@ -582,10 +593,6 @@ namespace FairyGUI
 
 			if (target == null && opaque && (hitArea != null || _contentRect.Contains(localPoint)))
 				target = this;
-
-			HitTestContext.worldPoint = savedWorldPoint;
-			HitTestContext.direction = savedDirection;
-			HitTestContext.camera = savedCamera;
 
 			return target;
 		}
@@ -684,7 +691,7 @@ namespace FairyGUI
 
 		override public void Update(UpdateContext context)
 		{
-			if (_disabled)
+			if (_isPanel && !gameObject.activeInHierarchy)
 				return;
 
 			base.Update(context);
