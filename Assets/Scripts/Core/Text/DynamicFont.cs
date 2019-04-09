@@ -39,9 +39,9 @@ namespace FairyGUI
 			this.shader = ShaderConfig.textShader;
 			_lastFontSize = -1;
 
-			//The fonts in mobile platform have no default bold effect.
-			if (name.ToLower().IndexOf("bold") == -1)
-				this.customBold = Application.isMobilePlatform;
+            //The fonts in mobile platform have no default bold effect.
+            if (name.ToLower().IndexOf("bold") == -1)
+                this.customBold = true;// Application.isMobilePlatform;
 
 			_renderInfo = new Dictionary<int, RenderInfo>();
 

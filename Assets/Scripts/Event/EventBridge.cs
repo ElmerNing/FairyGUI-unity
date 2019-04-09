@@ -98,9 +98,9 @@ namespace FairyGUI
 				{
 					_callback1 = (EventCallback1)Delegate.Remove(_callback1, ds[i]);
 					//DelayDispose的处理并不安全，原因在如果Remove后立刻Add，那么DelayDispose会误删除，先注释掉，等待tolua改进
-					//state.DelayDispose(ld.func);
-					//if (ld.self != null)
-					//	state.DelayDispose(ld.self);
+					state.DelayDispose(ld.func);
+					if (ld.self != null)
+						state.DelayDispose(ld.self);
 					break;
 				}
 			}
@@ -124,21 +124,21 @@ namespace FairyGUI
 		{
 #if FAIRYGUI_TOLUA
 			//DelayDispose的处理并不安全，原因在如果Remove后立刻Add，那么DelayDispose会误删除，先注释掉，等待tolua改进
-			//if (_callback1 != null)
-			//{
-			//	Delegate[] ds = _callback1.GetInvocationList();
-			//	for (int i = 0; i < ds.Length; i++)
-			//	{
-			//		LuaDelegate ld = ds[i].Target as LuaDelegate;
-			//		if (ld != null)
-			//		{
-			//			LuaState state = ld.func.GetLuaState();
-			//			state.DelayDispose(ld.func);
-			//			if (ld.self != null)
-			//				state.DelayDispose(ld.self);
-			//		}
-			//	}
-			//}
+			if (_callback1 != null)
+			{
+				Delegate[] ds = _callback1.GetInvocationList();
+				for (int i = 0; i < ds.Length; i++)
+				{
+					LuaDelegate ld = ds[i].Target as LuaDelegate;
+					if (ld != null)
+					{
+						LuaState state = ld.func.GetLuaState();
+						state.DelayDispose(ld.func);
+						if (ld.self != null)
+							state.DelayDispose(ld.self);
+					}
+				}
+			}
 #endif
 			_callback1 = null;
 			_callback0 = null;
