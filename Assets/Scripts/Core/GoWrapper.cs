@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using FairyGUI.Utils;
+using LuaInterface;
 
 namespace FairyGUI
 {
@@ -25,10 +26,11 @@ namespace FairyGUI
 #endif
 		protected bool _cloneMaterial;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public GoWrapper()
+        private LuaFunction beforeCleanTargetFunc;
+        /// <summary>
+        /// 
+        /// </summary>
+        public GoWrapper()
 		{
 			_skipInFairyBatching = true;
 
@@ -324,10 +326,28 @@ namespace FairyGUI
 			base.Update(context);
 		}
 
+        public void SetBeforeCleanTargetFunc(LuaFunction func)
+        {
+            if (this.beforeCleanTargetFunc != null)
+            {
+                this.beforeCleanTargetFunc.Dispose();
+                this.beforeCleanTargetFunc = null;
+
+            }
+            this.beforeCleanTargetFunc = func;
+        }
+
 		public override void Dispose()
 		{
 			if (_disposed)
 				return;
+
+            if (this.beforeCleanTargetFunc != null)
+            {
+                this.beforeCleanTargetFunc.Call();
+                this.beforeCleanTargetFunc.Dispose();
+                this.beforeCleanTargetFunc = null;
+            }
 
 			if (_wrapTarget != null)
 			{

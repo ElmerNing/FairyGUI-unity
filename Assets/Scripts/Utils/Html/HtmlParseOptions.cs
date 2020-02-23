@@ -34,10 +34,13 @@ namespace FairyGUI.Utils
 		/// </summary>
 		public bool ignoreWhiteSpace;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public static bool DefaultLinkUnderline = true;
+        public int clickWidthAdd;
+        public int clickHeightAdd;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public static bool DefaultLinkUnderline = true;
 
 		/// <summary>
 		/// 
@@ -54,12 +57,18 @@ namespace FairyGUI.Utils
 		/// </summary>
 		public static Color DefaultLinkHoverBgColor = Color.clear;
 
-		public HtmlParseOptions()
+        // 扩大点击区域
+        public static int DefaultClickWidthAdd = 5;
+        public static int DefaultClickHeightAdd = 5;
+
+        public HtmlParseOptions()
 		{
 			linkUnderline = DefaultLinkUnderline;
 			linkColor = DefaultLinkColor;
 			linkBgColor = DefaultLinkBgColor;
 			linkHoverBgColor = DefaultLinkHoverBgColor;
-		}
+            clickWidthAdd = DefaultClickWidthAdd;
+            clickHeightAdd = DefaultClickHeightAdd;
+        }
 	}
 }

@@ -25,14 +25,21 @@ namespace FairyGUI.Utils
 			};
 			_rolloverHandler = (EventContext context) =>
 			{
-				if (_owner.htmlParseOptions.linkHoverBgColor.a > 0)
-					_shape.color = _owner.htmlParseOptions.linkHoverBgColor;
+				if (_owner.htmlParseOptions.linkHoverBgColor.a > 0 && _shape != null)
+                {
+                    _shape.color = _owner.htmlParseOptions.linkHoverBgColor;
+                    _shape.alpha = _shape.color.a;
+                }
+					
 			};
 			_rolloutHandler = () =>
 			{
-				if (_owner.htmlParseOptions.linkHoverBgColor.a > 0)
-					_shape.color = _owner.htmlParseOptions.linkBgColor;
-			};
+                if (_owner.htmlParseOptions.linkHoverBgColor.a > 0 && _shape != null)
+                {
+                    _shape.color = _owner.htmlParseOptions.linkBgColor;
+                    _shape.alpha = _shape.color.a;
+                }      
+            };
 		}
 
 		public DisplayObject displayObject
@@ -59,10 +66,12 @@ namespace FairyGUI.Utils
 		{
 			_owner = owner;
 			_element = element;
-			_shape.onClick.Add(_clickHandler);
-			_shape.onRollOver.Add(_rolloverHandler);
-			_shape.onRollOut.Add(_rolloutHandler);
-			_shape.color = _owner.htmlParseOptions.linkBgColor;
+
+            _shape.onClick.Add(_clickHandler);
+			_shape.onTouchBegin.Add(_rolloverHandler);
+			_shape.onTouchEnd.Add(_rolloutHandler);
+            _shape.onRollOut.Add(_rolloutHandler);
+            _shape.color = _owner.htmlParseOptions.linkBgColor;
 		}
 
 		public void SetArea(int startLine, float startCharX, int endLine, float endCharX)
@@ -75,6 +84,16 @@ namespace FairyGUI.Utils
 			}
 			_shape.rects.Clear();
 			_owner.textField.GetLinesShape(startLine, startCharX, endLine, endCharX, true, _shape.rects);
+            int wAdd = _owner.htmlParseOptions.clickWidthAdd;
+            int hAdd = _owner.htmlParseOptions.clickWidthAdd;
+            for (int i = 0; i < _shape.rects.Count; i++) {
+                var rect = _shape.rects[i];
+                rect.x -= wAdd * 0.5F;
+                rect.y -= hAdd * 0.5F;
+                rect.width += wAdd;
+                rect.height += hAdd;
+                _shape.rects[i] = rect;
+            }
 			_shape.Refresh();
 		}
 
