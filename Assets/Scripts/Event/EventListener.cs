@@ -244,7 +244,7 @@ namespace FairyGUI
         /// <returns></returns>
         public bool Call()
         {
-            return _bridge.owner.InternalDispatchEvent(this._type, _bridge, null, null);
+            return _bridge.owner.InternalDispatchEvent(_type, _bridge, null, null);
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace FairyGUI
         /// <returns></returns>
         public bool Call(object data)
         {
-            return _bridge.owner.InternalDispatchEvent(this._type, _bridge, data, null);
+            return _bridge.owner.InternalDispatchEvent(_type, _bridge, data, null);
         }
 
         /// <summary>

@@ -1275,7 +1275,8 @@ namespace FairyGUI
                 localPoint.z = 0;
 
                 //在这写可能不大合适，但要转回世界坐标，才能保证孩子的点击检测正确进行
-                HitTestContext.worldPoint = this.cachedTransform.TransformPoint(localPoint);
+                if(this is Container)
+                    HitTestContext.worldPoint = this.cachedTransform.TransformPoint(localPoint);
             }
             localPoint.y = -localPoint.y;
 
@@ -1467,7 +1468,7 @@ namespace FairyGUI
                 if (parent._paintingMode != 0)
                     layerValue = CaptureCamera.hiddenLayer;
 
-                if ((this is Container) && this.gameObject.layer != layerValue && this._paintingMode == 0)
+                if ((this is Container) && this.gameObject.layer != layerValue && _paintingMode == 0)
                     ((Container)this).SetChildrenLayer(layerValue);
 
                 this.layer = layerValue;
@@ -1524,7 +1525,8 @@ namespace FairyGUI
                 return this.isDisposed;
             }
             return this == obj;
-        }    }
+        }    
+    }
 
     /// <summary>
     /// 

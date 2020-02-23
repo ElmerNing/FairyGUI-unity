@@ -97,16 +97,33 @@ namespace FairyGUI
         /// 
         /// </summary>
         /// <param name="pi"></param>
+        /// <param name="userClass"></param>
         /// <returns></returns>
-        public static GObject NewObject(PackageItem pi)
+        public static GObject NewObject(PackageItem pi, System.Type userClass = null)
         {
-            if (pi.extensionCreator != null)
+            GObject obj;
+            if (pi.type == PackageItemType.Component)
             {
-                Stats.LatestObjectCreation++;
-                return pi.extensionCreator();
+                if (userClass != null)
+                {
+                    Stats.LatestObjectCreation++;
+                    obj = (GComponent)Activator.CreateInstance(userClass);
+                }
+                else if (pi.extensionCreator != null)
+                {
+                    Stats.LatestObjectCreation++;
+                    obj = pi.extensionCreator();
+                }
+                else
+                    obj = NewObject2(pi.objectType);
             }
             else
-                return NewObject2(pi.objectType, pi.name);
+                obj = NewObject2(pi.objectType);
+
+            if (obj != null)
+                obj.packageItem = pi;
+
+            return obj;
         }
 
         /// <summary>
@@ -170,6 +187,9 @@ namespace FairyGUI
 
                 case ObjectType.ComboBox:
                     return new GComboBox();
+
+                case ObjectType.Tree:
+                    return new GTree();
 
                 default:
                     return null;

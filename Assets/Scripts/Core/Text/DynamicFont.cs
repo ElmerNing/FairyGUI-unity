@@ -41,7 +41,7 @@ namespace FairyGUI
 
             //The fonts in mobile platform have no default bold effect.
             if (name.ToLower().IndexOf("bold") == -1)
-                this.customBold = true;// Application.isMobilePlatform;
+                this.customBold = Application.isMobilePlatform;
 
             _renderInfo = new Dictionary<int, RenderInfo>();
 

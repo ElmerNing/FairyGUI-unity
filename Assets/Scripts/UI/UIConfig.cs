@@ -151,7 +151,7 @@ namespace FairyGUI
         public static float frameTimeForAsyncUIConstruction = 0.002f;
 
         /// <summary>
-        /// if RenderTexture using in paiting mode has depth support.
+        /// if RenderTexture using in painting mode has depth support.
         /// </summary>
         public static bool depthSupportForPaintingMode = false;
 
@@ -195,6 +195,7 @@ namespace FairyGUI
             EnhancedTextOutlineEffect,
             DepthSupportForPaintingMode,
             RichTextRowVerticalAlign,
+            Branch,
 
             PleaseSelect = 100
         }
@@ -351,6 +352,10 @@ namespace FairyGUI
                     case ConfigKey.RichTextRowVerticalAlign:
                         UIConfig.richTextRowVerticalAlign = (VertAlignType)value.i;
                         break;
+
+                    case ConfigKey.Branch:
+                        UIPackage.branch = value.s;
+                        break;
                 }
             }
         }
@@ -419,6 +424,10 @@ namespace FairyGUI
                 case ConfigKey.RichTextRowVerticalAlign:
                     value.i = (int)VertAlignType.Bottom;
                     break;
+
+                case ConfigKey.Branch:
+                    value.s = "";
+                    break;
             }
         }
 
@@ -434,6 +443,7 @@ namespace FairyGUI
             UIConfig.tooltipsWin = null;
             UIConfig.verticalScrollBar = null;
             UIConfig.windowModalWaiting = null;
+            UIPackage.branch = null;
         }
 
         public void ApplyModifiedProperties()

@@ -199,9 +199,7 @@ namespace FairyGUI
         /// <returns>GObject</returns>
         virtual public GObject AddChildAt(GObject child, int index)
         {
-            int numChildren = _children.Count;
-
-            if (index >= 0 && index <= numChildren)
+            if (index >= 0 && index <= _children.Count)
             {
                 if (child.parent == this)
                 {
@@ -231,14 +229,12 @@ namespace FairyGUI
 
                     ChildStateChanged(child);
                     SetBoundsChangedFlag();
-                    if (child.group != null)
-                        child.group.SetBoundsChangedFlag(true);
                 }
                 return child;
             }
             else
             {
-                throw new Exception("Invalid child index: " + index + ">" + numChildren);
+                throw new Exception("Invalid child index: " + index + ">" + _children.Count);
             }
         }
 
@@ -384,6 +380,33 @@ namespace FairyGUI
             }
 
             return null;
+        }
+
+        public GObject GetChildByPath(string path)
+        {
+            string[] arr = path.Split('.');
+            int cnt = arr.Length;
+            GComponent gcom = this;
+            GObject obj = null;
+            for (int i = 0; i < cnt; ++i)
+            {
+                obj = gcom.GetChild(arr[i]);
+                if (obj == null)
+                    break;
+
+                if (i != cnt - 1)
+                {
+                    if (!(gcom is GComponent))
+                    {
+                        obj = null;
+                        break;
+                    }
+                    else
+                        gcom = (GComponent)obj;
+                }
+            }
+
+            return obj;
         }
 
         /// <summary>
@@ -820,13 +843,14 @@ namespace FairyGUI
 
                 case ChildrenRenderOrder.Arch:
                     {
-                        for (int i = 0; i < _apexIndex; i++)
+                        int apex = Mathf.Clamp(_apexIndex, 0, cnt);
+                        for (int i = 0; i < apex; i++)
                         {
                             GObject child = _children[i];
                             if (child.displayObject != null && child.internalVisible)
                                 container.AddChild(child.displayObject);
                         }
-                        for (int i = cnt - 1; i >= _apexIndex; i--)
+                        for (int i = cnt - 1; i >= apex; i--)
                         {
                             GObject child = _children[i];
                             if (child.displayObject != null && child.internalVisible)
@@ -1275,13 +1299,15 @@ namespace FairyGUI
         {
             this.gameObjectName = packageItem.name;
 
-            if (!packageItem.translated)
+            PackageItem contentItem = packageItem.getBranch();
+
+            if (!contentItem.translated)
             {
-                packageItem.translated = true;
-                TranslationHelper.TranslateComponent(packageItem);
+                contentItem.translated = true;
+                TranslationHelper.TranslateComponent(contentItem);
             }
 
-            ByteBuffer buffer = packageItem.rawData;
+            ByteBuffer buffer = contentItem.rawData;
             buffer.Seek(0, 0);
 
             underConstruct = true;
@@ -1378,7 +1404,7 @@ namespace FairyGUI
                         if (pkgId != null)
                             pkg = UIPackage.GetById(pkgId);
                         else
-                            pkg = packageItem.owner;
+                            pkg = contentItem.owner;
 
                         pi = pkg != null ? pkg.GetItem(src) : null;
                     }
@@ -1386,7 +1412,6 @@ namespace FairyGUI
                     if (pi != null)
                     {
                         child = UIObjectFactory.NewObject(pi);
-                        child.packageItem = pi;
                         child.ConstructFromResource();
                     }
                     else
@@ -1446,15 +1471,20 @@ namespace FairyGUI
                 if (buffer.ReadBool())
                     container.reversedMask = true;
             }
-            string hitTestId = buffer.ReadS();
-            if (hitTestId != null)
+
             {
-                PackageItem pi = packageItem.owner.GetItem(hitTestId);
-                if (pi != null && pi.pixelHitTestData != null)
+                string hitTestId = buffer.ReadS();
+                int i1 = buffer.ReadInt();
+                int i2 = buffer.ReadInt();
+                if (hitTestId != null)
                 {
-                    int i1 = buffer.ReadInt();
-                    int i2 = buffer.ReadInt();
-                    rootContainer.hitArea = new PixelHitTest(pi.pixelHitTestData, i1, i2, sourceWidth, sourceHeight);
+                    PackageItem pi = contentItem.owner.GetItem(hitTestId);
+                    if (pi != null && pi.pixelHitTestData != null)
+                        rootContainer.hitArea = new PixelHitTest(pi.pixelHitTestData, i1, i2, sourceWidth, sourceHeight);
+                }
+                else if (i1 != 0 && i2 != -1)
+                {
+                    rootContainer.hitArea = new ShapeHitTest(this.GetChildAt(i2).displayObject);
                 }
             }
 
@@ -1487,7 +1517,7 @@ namespace FairyGUI
             BuildNativeDisplayList();
             SetBoundsChangedFlag();
 
-            if (packageItem.objectType != ObjectType.Component)
+            if (contentItem.objectType != ObjectType.Component)
                 ConstructExtension(buffer);
 
             ConstructFromXML(null);
@@ -1526,6 +1556,25 @@ namespace FairyGUI
                 string pageId = buffer.ReadS();
                 if (cc != null)
                     cc.selectedPageId = pageId;
+            }
+
+            if (buffer.version >= 2)
+            {
+                cnt = buffer.ReadShort();
+                for (int i = 0; i < cnt; i++)
+                {
+                    string target = buffer.ReadS();
+                    int propertyId = buffer.ReadShort();
+                    string value = buffer.ReadS();
+                    GObject obj = this.GetChildByPath(target);
+                    if (obj != null)
+                    {
+                        if (propertyId == 0)
+                            obj.text = value;
+                        else if (propertyId == 1)
+                            obj.icon = value;
+                    }
+                }
             }
         }
 

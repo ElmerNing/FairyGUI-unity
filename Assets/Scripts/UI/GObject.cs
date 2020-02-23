@@ -144,6 +144,7 @@ namespace FairyGUI
         internal bool _gearLocked;
         internal float _sizePercentInGroup;
         internal bool _disposed;
+        internal GTreeNode _treeNode;
 
         internal static uint _gInstanceCounter;
 
@@ -163,7 +164,7 @@ namespace FairyGUI
             CreateDisplayObject();
 
             relations = new Relations(this);
-            _gears = new GearBase[8];
+            _gears = new GearBase[10];
         }
 
         /// <summary>
@@ -407,7 +408,7 @@ namespace FairyGUI
                 {
                     parent.SetBoundsChangedFlag();
                     if (_group != null)
-                        _group.SetBoundsChangedFlag();
+                        _group.SetBoundsChangedFlag(true);
                     DispatchEvent("onPositionChanged", null);
                 }
 
@@ -577,7 +578,7 @@ namespace FairyGUI
                     relations.OnOwnerSizeChanged(dWidth, dHeight, _pivotAsAnchor || !ignorePivot);
                     parent.SetBoundsChangedFlag();
                     if (_group != null)
-                        _group.SetBoundsChangedFlag(true);
+                        _group.SetBoundsChangedFlag();
                 }
 
                 DispatchEvent("onSizeChanged", null);
@@ -921,6 +922,8 @@ namespace FairyGUI
                     HandleVisibleChanged();
                     if (parent != null)
                         parent.SetBoundsChangedFlag();
+                    if (_group != null && _group.excludeInvisibles)
+                        _group.SetBoundsChangedFlag();
                 }
             }
         }
@@ -938,6 +941,14 @@ namespace FairyGUI
             get
             {
                 return _visible && (group == null || group.internalVisible2);
+            }
+        }
+
+        internal bool internalVisible3
+        {
+            get
+            {
+                return _visible && _internalVisible;
             }
         }
 
@@ -1175,6 +1186,12 @@ namespace FairyGUI
                     case 7:
                         gear = new GearIcon(this);
                         break;
+                    case 8:
+                        gear = new GearDisplay2(this);
+                        break;
+                    case 9:
+                        gear = new GearFontSize(this);
+                        break;
                     default:
                         throw new System.Exception("FairyGUI: invalid gear index!");
                 }
@@ -1234,11 +1251,16 @@ namespace FairyGUI
                 return;
 
             bool connected = _gears[0] == null || ((GearDisplay)_gears[0]).connected;
+            if (_gears[8] != null)
+                connected = ((GearDisplay2)_gears[8]).Evaluate(connected);
+
             if (connected != _internalVisible)
             {
                 _internalVisible = connected;
                 if (parent != null)
                     parent.ChildStateChanged(this);
+                if (_group != null && _group.excludeInvisibles)
+                    _group.SetBoundsChangedFlag();
             }
         }
 
@@ -1256,7 +1278,7 @@ namespace FairyGUI
         virtual public void HandleControllerChanged(Controller c)
         {
             _handlingController = true;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 10; i++)
             {
                 GearBase gear = _gears[i];
                 if (gear != null && gear.controller == c)
@@ -1318,10 +1340,10 @@ namespace FairyGUI
                 if (_group != value)
                 {
                     if (_group != null)
-                        _group.SetBoundsChangedFlag(true);
+                        _group.SetBoundsChangedFlag();
                     _group = value;
                     if (_group != null)
-                        _group.SetBoundsChangedFlag(true);
+                        _group.SetBoundsChangedFlag();
                     HandleVisibleChanged();
                     if (parent != null)
                         parent.ChildStateChanged(this);
@@ -1606,7 +1628,7 @@ namespace FairyGUI
             RemoveEventListeners();
             relations.Dispose();
             relations = null;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 10; i++)
             {
                 GearBase gear = _gears[i];
                 if (gear != null)
@@ -1738,6 +1760,22 @@ namespace FairyGUI
         public GMovieClip asMovieClip
         {
             get { return this as GMovieClip; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public GTree asTree
+        {
+            get { return this as GTree; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public GTreeNode treeNode
+        {
+            get { return _treeNode; }
         }
 
         virtual protected void CreateDisplayObject()

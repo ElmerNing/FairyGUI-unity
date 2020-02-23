@@ -4,35 +4,35 @@ using UnityEngine;
 
 namespace FairyGUI.Utils
 {
-	/// <summary>
-	/// 
-	/// </summary>
-	public class HtmlParseOptions
-	{
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool linkUnderline;
+    /// <summary>
+    /// 
+    /// </summary>
+    public class HtmlParseOptions
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool linkUnderline;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public Color linkColor;
+        /// <summary>
+        /// 
+        /// </summary>
+        public Color linkColor;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public Color linkBgColor;
+        /// <summary>
+        /// 
+        /// </summary>
+        public Color linkBgColor;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public Color linkHoverBgColor;
+        /// <summary>
+        /// 
+        /// </summary>
+        public Color linkHoverBgColor;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public bool ignoreWhiteSpace;
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool ignoreWhiteSpace;
 
         public int clickWidthAdd;
         public int clickHeightAdd;
@@ -42,20 +42,20 @@ namespace FairyGUI.Utils
         /// </summary>
         public static bool DefaultLinkUnderline = true;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public static Color DefaultLinkColor = new Color32(0x3A, 0x67, 0xCC, 0xFF);
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Color DefaultLinkColor = new Color32(0x3A, 0x67, 0xCC, 0xFF);
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public static Color DefaultLinkBgColor = Color.clear;
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Color DefaultLinkBgColor = Color.clear;
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public static Color DefaultLinkHoverBgColor = Color.clear;
+        /// <summary>
+        /// 
+        /// </summary>
+        public static Color DefaultLinkHoverBgColor = Color.clear;
 
         // 扩大点击区域
         public static int DefaultClickWidthAdd = 5;
