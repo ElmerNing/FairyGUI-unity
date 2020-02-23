@@ -1,89 +1,89 @@
 ﻿
 namespace FairyGUI.Utils
 {
-	/// <summary>
-	/// 
-	/// </summary>
-	public class HtmlLink : IHtmlObject
-	{
-		RichTextField _owner;
-		HtmlElement _element;
-		SelectionShape _shape;
+    /// <summary>
+    /// 
+    /// </summary>
+    public class HtmlLink : IHtmlObject
+    {
+        RichTextField _owner;
+        HtmlElement _element;
+        SelectionShape _shape;
 
-		EventCallback1 _clickHandler;
-		EventCallback1 _rolloverHandler;
-		EventCallback0 _rolloutHandler;
+        EventCallback1 _clickHandler;
+        EventCallback1 _rolloverHandler;
+        EventCallback0 _rolloutHandler;
 
-		public HtmlLink()
-		{
-			_shape = new SelectionShape();
-			_shape.gameObject.name = "HtmlLink";
+        public HtmlLink()
+        {
+            _shape = new SelectionShape();
+            _shape.gameObject.name = "HtmlLink";
 
-			_clickHandler = (EventContext context) =>
-			{
-				_owner.BubbleEvent("onClickLink", _element.GetString("href"));
-			};
-			_rolloverHandler = (EventContext context) =>
-			{
-				if (_owner.htmlParseOptions.linkHoverBgColor.a > 0 && _shape != null)
+            _clickHandler = (EventContext context) =>
+            {
+                _owner.BubbleEvent("onClickLink", _element.GetString("href"));
+            };
+            _rolloverHandler = (EventContext context) =>
+            {
+                if (_owner.htmlParseOptions.linkHoverBgColor.a > 0 && _shape != null)
                 {
                     _shape.color = _owner.htmlParseOptions.linkHoverBgColor;
                     _shape.alpha = _shape.color.a;
                 }
-					
-			};
-			_rolloutHandler = () =>
-			{
+                    
+            };
+            _rolloutHandler = () =>
+            {
                 if (_owner.htmlParseOptions.linkHoverBgColor.a > 0 && _shape != null)
                 {
                     _shape.color = _owner.htmlParseOptions.linkBgColor;
                     _shape.alpha = _shape.color.a;
                 }      
             };
-		}
+        }
 
-		public DisplayObject displayObject
-		{
-			get { return _shape; }
-		}
+        public DisplayObject displayObject
+        {
+            get { return _shape; }
+        }
 
-		public HtmlElement element
-		{
-			get { return _element; }
-		}
+        public HtmlElement element
+        {
+            get { return _element; }
+        }
 
-		public float width
-		{
-			get { return 0; }
-		}
+        public float width
+        {
+            get { return 0; }
+        }
 
-		public float height
-		{
-			get { return 0; }
-		}
+        public float height
+        {
+            get { return 0; }
+        }
 
-		public void Create(RichTextField owner, HtmlElement element)
-		{
-			_owner = owner;
-			_element = element;
+        public void Create(RichTextField owner, HtmlElement element)
+        {
+            _owner = owner;
+            _element = element;
 
             _shape.onClick.Add(_clickHandler);
-			_shape.onTouchBegin.Add(_rolloverHandler);
-			_shape.onTouchEnd.Add(_rolloutHandler);
+            _shape.onTouchBegin.Add(_rolloverHandler);
+            _shape.onTouchEnd.Add(_rolloutHandler);
             _shape.onRollOut.Add(_rolloutHandler);
             _shape.color = _owner.htmlParseOptions.linkBgColor;
-		}
+        }
 
-		public void SetArea(int startLine, float startCharX, int endLine, float endCharX)
-		{
-			if (startLine == endLine && startCharX > endCharX)
-			{
-				float tmp = startCharX;
-				startCharX = endCharX;
-				endCharX = tmp;
-			}
-			_shape.rects.Clear();
-			_owner.textField.GetLinesShape(startLine, startCharX, endLine, endCharX, true, _shape.rects);
+        public void SetArea(int startLine, float startCharX, int endLine, float endCharX)
+        {
+            if (startLine == endLine && startCharX > endCharX)
+            {
+                float tmp = startCharX;
+                startCharX = endCharX;
+                endCharX = tmp;
+            }
+            _shape.rects.Clear();
+            _owner.textField.GetLinesShape(startLine, startCharX, endLine, endCharX, true, _shape.rects);
             int wAdd = _owner.htmlParseOptions.clickWidthAdd;
             int hAdd = _owner.htmlParseOptions.clickWidthAdd;
             for (int i = 0; i < _shape.rects.Count; i++) {
@@ -94,38 +94,38 @@ namespace FairyGUI.Utils
                 rect.height += hAdd;
                 _shape.rects[i] = rect;
             }
-			_shape.Refresh();
-		}
+            _shape.Refresh();
+        }
 
-		public void SetPosition(float x, float y)
-		{
-			_shape.SetXY(x, y);
-		}
+        public void SetPosition(float x, float y)
+        {
+            _shape.SetXY(x, y);
+        }
 
-		public void Add()
-		{
-			//add below _shape
-			_owner.AddChildAt(_shape, 0);
-		}
+        public void Add()
+        {
+            //add below _shape
+            _owner.AddChildAt(_shape, 0);
+        }
 
-		public void Remove()
-		{
-			if (_shape.parent != null)
-				_owner.RemoveChild(_shape);
-		}
+        public void Remove()
+        {
+            if (_shape.parent != null)
+                _owner.RemoveChild(_shape);
+        }
 
-		public void Release()
-		{
-			_shape.RemoveEventListeners();
+        public void Release()
+        {
+            _shape.RemoveEventListeners();
 
-			_owner = null;
-			_element = null;
-		}
+            _owner = null;
+            _element = null;
+        }
 
-		public void Dispose()
-		{
-			_shape.Dispose();
-			_shape = null;
-		}
-	}
+        public void Dispose()
+        {
+            _shape.Dispose();
+            _shape = null;
+        }
+    }
 }
