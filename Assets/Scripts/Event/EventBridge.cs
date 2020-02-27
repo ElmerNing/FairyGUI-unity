@@ -1,5 +1,6 @@
 #if FAIRYGUI_TOLUA
 using LuaInterface;
+using System;
 #endif
 
 namespace FairyGUI

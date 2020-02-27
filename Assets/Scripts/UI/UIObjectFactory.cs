@@ -115,10 +115,10 @@ namespace FairyGUI
                     obj = pi.extensionCreator();
                 }
                 else
-                    obj = NewObject2(pi.objectType);
+                    obj = NewObject2(pi.objectType, pi.name);
             }
             else
-                obj = NewObject2(pi.objectType);
+                obj = NewObject2(pi.objectType, pi.name);
 
             if (obj != null)
                 obj.packageItem = pi;
